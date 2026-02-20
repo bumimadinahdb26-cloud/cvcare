@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVC Early Warning System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f0fdfa;
+            --bg-card: #ffffff;
+            --fg-primary: #134e4a;
+            --fg-secondary: #0f766e;
+            --fg-muted: #5eead4;
+            --accent-teal: #0d9488;
+            --accent-green: #10b981;
+            --accent-purple: #8b5cf6;
+            --accent-light-purple: #a78bfa;
+            --warning-yellow: #fbbf24;
+            --warning-orange: #f97316;
+            --danger-red: #ef4444;
+            --success-green: #22c55e;
+            --border-color: #d1fae5;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background: linear-gradient(135deg, #f0fdfa 0%, #ffffff 50%, #f5f3ff 100%);
+            color: var(--fg-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; }
+
+        .bg-blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            z-index: -1;
+        }
+        .blob-1 { width: 600px; height: 600px; background: #ccfbf1; top: -200px; left: -200px; }
+        .blob-2 { width: 500px; height: 500px; background: #ede9fe; bottom: -150px; right: -150px; }
+
+        .header {
+            background: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(13, 148, 136, 0.05);
+        }
+
+        .logo-pulse {
+            width: 12px; height: 12px;
+            background: var(--accent-purple);
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7);
+            animation: pulse-ring 2s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+        }
+
+        .lang-switcher {
+            display: flex;
+            background: #f8fafc;
+            border-radius: 999px;
+            padding: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .lang-btn {
+            padding: 6px 16px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            background: transparent;
+            color: var(--fg-secondary);
+        }
+
+        .lang-btn.active {
+            background: linear-gradient(135deg, var(--accent-teal), var(--accent-green));
+            color: white;
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
+        }
+
+        .nav-tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: var(--fg-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-tab::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 100%; height: 3px;
+            background: linear-gradient(90deg, var(--accent-teal), var(--accent-purple));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+            border-radius: 3px 3px 0 0;
+        }
+
+        .nav-tab:hover { color: var(--fg-primary); }
+        .nav-tab.active { color: var(--accent-teal); }
+        .nav-tab.active::after { transform: scaleX(1); }
+
+        .card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px -10px rgba(13, 148, 136, 0.1);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px -10px rgba(139, 92, 246, 0.15);
+            border-color: var(--accent-light-purple);
+        }
+
+        .card-header {
+            background: linear-gradient(90deg, rgba(240, 253, 250, 1) 0%, rgba(255, 255, 255, 1) 100%);
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .symptom-checkbox { display: none; }
+
+        .symptom-label {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 16px;
+            background: #fcfcfc;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .symptom-label:hover {
+            background: #f0fdfa;
+            border-color: var(--accent-teal);
+        }
+
+        .symptom-checkbox:checked + .symptom-label {
+            background: #f0fdfa;
+            border-color: var(--accent-teal);
+            box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.1);
+        }
+
+        .checkbox-indicator {
+            width: 22px; height: 22px;
+            min-width: 22px;
+            border: 2px solid #d1d5db;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .symptom-checkbox:checked + .symptom-label .checkbox-indicator {
+            background: linear-gradient(135deg, var(--accent-teal), var(--accent-green));
+            border-color: transparent;
+        }
+
+        .checkbox-indicator svg {
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.2s ease;
+            stroke: white;
+        }
+
+        .symptom-checkbox:checked + .symptom-label .checkbox-indicator svg {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .risk-meter {
+            height: 10px;
+            background: #f3f4f6;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .risk-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: all 0.5s ease;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.02em;
+        }
+
+        .badge-green { background: #dcfce7; color: #166534; }
+        .badge-yellow { background: #fef3c7; color: #854d0e; }
+        .badge-orange { background: #ffedd5; color: #9a3412; }
+        .badge-red { background: #fee2e2; color: #991b1b; animation: pulse-red 2s infinite; }
+
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+        }
+
+        .action-btn {
+            padding: 14px 28px;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-teal), var(--accent-green));
+            color: white;
+            box-shadow: 0 10px 20px -5px rgba(13, 148, 136, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px -5px rgba(13, 148, 136, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            border: 2px solid var(--accent-purple);
+            color: var(--accent-purple);
+        }
+
+        .btn-secondary:hover {
+            background: #f5f3ff;
+            transform: translateY(-2px);
+        }
+
+        .btn-wa {
+            background: #22c55e;
+            color: white;
+            box-shadow: 0 10px 20px -5px rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-wa:hover {
+            background: #16a34a;
+            transform: translateY(-2px);
+        }
+
+        .section { display: none; animation: fadeSlide 0.5s ease; }
+        .section.active { display: block; }
+
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .progress-ring { transform: rotate(-90deg); }
+        .progress-ring-circle { transition: stroke-dashoffset 0.5s ease; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal-content {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 450px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalSlide 0.3s ease;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        @keyframes modalSlide {
+            from { opacity: 0; transform: scale(0.95) translateY(-20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .input-field {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: var(--fg-primary);
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+            background: white;
+        }
+
+        .wa-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .wa-card:hover {
+            border-color: #22c55e;
+            background: #f0fdf4;
+            transform: translateY(-2px);
+        }
+
+        .wa-card-btn {
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .wa-card-btn:hover {
+            background: #22c55e;
+            color: white;
+            border-color: #22c55e;
+        }
+
+        .alert-banner {
+            padding: 16px 20px;
+            border-radius: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            border: 1px solid;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%; right: 0;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 8px;
+            min-width: 180px;
+            display: none;
+            z-index: 200;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .dropdown-menu.active { display: block; animation: dropSlide 0.2s ease; }
+
+        @keyframes dropSlide {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dropdown-item {
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--fg-secondary);
+        }
+
+        .dropdown-item:hover { background: #f0fdfa; color: var(--accent-teal); }
+
+        .avatar {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--accent-purple);
+            background: #f5f3ff;
+        }
+
+        .avatar-large {
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--accent-purple);
+            background: #f5f3ff;
+        }
+
+        .table { width: 100%; border-collapse: collapse; }
+
+        .table th {
+            text-align: left;
+            padding: 14px 16px;
+            background: #f8fafc;
+            color: var(--fg-secondary);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .table tr:hover td { background: #f0fdfa; }
+
+        .signature {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 12px;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-blob blob-1"></div>
+    <div class="bg-blob blob-2"></div>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal-content">
+            <div class="card-header flex items-center justify-between">
+                <h3 class="font-semibold text-gray-800" data-i18n="loginTitle">Login Pasien</h3>
+                <button onclick="closeModal('loginModal')" class="p-2 rounded-lg hover:bg-gray-100">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-gray-500">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-xs font-medium mb-2 block text-gray-600" data-i18n="username">Username</label>
+                        <input type="text" class="input-field" id="loginUsername" data-i18n-placeholder="usernamePlaceholder">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium mb-2 block text-gray-600" data-i18n="password">Password</label>
+                        <input type="password" class="input-field" id="loginPassword" data-i18n-placeholder="passwordPlaceholder">
+                    </div>
+                    <button class="action-btn btn-primary w-full justify-center" onclick="handleLogin()">
+                        <span data-i18n="loginBtn">Login</span>
+                    </button>
+                    <p class="text-center text-sm text-gray-500">
+                        <span data-i18n="noAccount">Belum punya akun?</span> 
+                        <a href="#" onclick="switchModal('loginModal', 'registerModal'); return false;" class="text-teal-600 font-semibold hover:underline" data-i18n="registerHere">Daftar disini</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal-overlay" id="registerModal">
+        <div class="modal-content">
+            <div class="card-header flex items-center justify-between">
+                <h3 class="font-semibold text-gray-800" data-i18n="registerTitle">Daftar Pasien Baru</h3>
+                <button onclick="closeModal('registerModal')" class="p-2 rounded-lg hover:bg-gray-100">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-gray-500">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="text-center mb-6">
+                    <div class="relative inline-block">
+                        <img id="previewPhoto" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E" class="avatar-large mb-2">
+                        <label class="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer bg-purple-500 hover:bg-purple-600 transition-colors">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                <circle cx="12" cy="13" r="4"/>
+                            </svg>
+                            <input type="file" accept="image/*" id="photoInput" class="hidden" onchange="previewImage(this)">
+                        </label>
+                    </div>
+                    <p class="text-xs text-gray-500" data-i18n="uploadPhoto">Klik untuk upload foto</p>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-xs font-medium mb-2 block text-gray-600" data-i18n="fullName">Nama Lengkap</label>
+                        <input type="text" class="input-field" id="registerName" data-i18n-placeholder="fullNamePlaceholder">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium mb-2 block text-gray-600" data-i18n="username">Username</label>
+                        <input type="text" class="input-field" id="registerUsername" data-i18n-placeholder="createUsername">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium mb-2 block text-gray-600" data-i18n="password">Password</label>
+                        <input type="password" class="input-field" id="registerPassword" data-i18n-placeholder="createPassword">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium mb-2 block text-gray-600" data-i18n="phone">No. HP</label>
+                        <input type="tel" class="input-field" id="registerPhone" data-i18n-placeholder="phonePlaceholder">
+                    </div>
+                    <button class="action-btn btn-primary w-full justify-center" onclick="handleRegister()">
+                        <span data-i18n="registerBtn">Daftar</span>
+                    </button>
+                    <p class="text-center text-sm text-gray-500">
+                        <span data-i18n="haveAccount">Sudah punya akun?</span> 
+                        <a href="#" onclick="switchModal('registerModal', 'loginModal'); return false;" class="text-teal-600 font-semibold hover:underline" data-i18n="loginHere">Login disini</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header relative z-10">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="logo-pulse"></div>
+                    <div>
+                        <h1 class="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-purple-600">CVC Early Warning System</h1>
+                        <p class="text-xs text-gray-500" data-i18n="subtitle">Sistem Peringatan Dini Kateter</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <div class="lang-switcher">
+                        <button class="lang-btn active" id="langId" onclick="setLanguage('id')">ID</button>
+                        <button class="lang-btn" id="langEn" onclick="setLanguage('en')">EN</button>
+                    </div>
+                    
+                    <div id="loggedOutState" class="flex items-center gap-2">
+                        <button onclick="openModal('loginModal')" class="action-btn btn-secondary text-sm py-2 px-4">
+                            <span data-i18n="login">Login</span>
+                        </button>
+                        <button onclick="openModal('registerModal')" class="action-btn btn-primary text-sm py-2 px-4">
+                            <span data-i18n="register">Daftar</span>
+                        </button>
+                    </div>
+                    
+                    <div id="loggedInState" class="hidden relative">
+                        <div class="flex items-center gap-3 cursor-pointer" onclick="toggleDropdown()">
+                            <div class="text-right hidden sm:block">
+                                <p class="text-sm font-semibold text-gray-800" id="headerUserName">Nama Pasien</p>
+                                <p class="text-xs text-gray-400" id="headerTime">--:--:--</p>
+                            </div>
+                            <img id="headerAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E" class="avatar">
+                        </div>
+                        <div class="dropdown-menu" id="userDropdown">
+                            <div class="dropdown-item" onclick="handleLogout()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                    <polyline points="16 17 21 12 16 7"/>
+                                    <line x1="21" y1="12" x2="9" y2="12"/>
+                                </svg>
+                                <span data-i18n="logout">Keluar</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="relative z-10 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex gap-2 overflow-x-auto py-2">
+                <button class="nav-tab active" data-tab="assessment" onclick="switchTab('assessment')">
+                    <span data-i18n="navAssessment">Penilaian</span>
+                </button>
+                <button class="nav-tab" data-tab="results" onclick="switchTab('results')">
+                    <span data-i18n="navResults">Hasil</span>
+                </button>
+                <button class="nav-tab" data-tab="protocols" onclick="switchTab('protocols')">
+                    <span data-i18n="navProtocols">Panduan</span>
+                </button>
+                <button class="nav-tab" data-tab="literature" onclick="switchTab('literature')">
+                    <span data-i18n="navLiterature">Referensi</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="relative z-10 max-w-7xl mx-auto px-4 py-6">
+        
+        <!-- Assessment Section -->
+        <div id="assessment-section" class="section active">
+            <div class="card mb-6">
+                <div class="card-header">
+                    <h3 class="font-semibold text-teal-700" data-i18n="patientInfo">Data Pasien</h3>
+                </div>
+                <div class="p-5">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="text-xs font-medium mb-2 block text-gray-500" data-i18n="patientId">ID Pasien</label>
+                            <input type="text" class="input-field" id="patientId" data-i18n-placeholder="patientIdPlaceholder">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium mb-2 block text-gray-500" data-i18n="age">Usia</label>
+                            <input type="number" class="input-field" id="patientAge" data-i18n-placeholder="agePlaceholder">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium mb-2 block text-gray-500" data-i18n="cvcLocation">Lokasi Kateter</label>
+                            <select class="input-field" id="cvcLocation">
+                                <option value="internal-jugular" data-i18n="locIJ">Leher (Internal Jugular)</option>
+                                <option value="femoral" data-i18n="locFemoral">Paha (Femoral)</option>
+                                <option value="subclavian" data-i18n="locSubclavian">Dada (Subclavian)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium mb-2 block text-gray-500" data-i18n="daysInserted">Lama Terpasang</label>
+                            <input type="number" class="input-field" id="daysInserted" data-i18n-placeholder="daysPlaceholder">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                        <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-gray-200 hover:border-teal-300 bg-white transition-colors">
+                            <input type="checkbox" id="diabetes" onchange="calculateRisk()" class="w-4 h-4 text-teal-600 rounded focus:ring-teal-500">
+                            <span class="text-sm text-gray-700" data-i18n="diabetes">Penyakit Gula (Diabetes)</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-gray-200 hover:border-teal-300 bg-white transition-colors">
+                            <input type="checkbox" id="lowAlbumin" onchange="calculateRisk()" class="w-4 h-4 text-teal-600 rounded focus:ring-teal-500">
+                            <span class="text-sm text-gray-700" data-i18n="lowAlbumin">Kurang Gizi (Albumin Rendah)</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-gray-200 hover:border-teal-300 bg-white transition-colors">
+                            <input type="checkbox" id="immunocompromised" onchange="calculateRisk()" class="w-4 h-4 text-teal-600 rounded focus:ring-teal-500">
+                            <span class="text-sm text-gray-700" data-i18n="immunocompromised">Daya Tahan Tubuh Lemah</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card">
+                    <div class="card-header flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center bg-red-100">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800" data-i18n="infectionTitle">Tanda-Tanda Infeksi</h3>
+                                <p class="text-xs text-gray-500" data-i18n="infectionSubtitle">Cek di sekitar kateter</p>
+                            </div>
+                        </div>
+                        <span class="badge badge-green" id="infectionBadge" data-i18n="riskLow">Rendah</span>
+                    </div>
+                    <div class="p-5">
+                        <h4 class="text-sm font-semibold mb-3 text-gray-600 uppercase tracking-wider" data-i18n="localInfection">Infeksi di Tempat Kateter</h4>
+                        <div class="space-y-3 mb-6">
+                            <input type="checkbox" class="symptom-checkbox" id="erythema" onchange="calculateRisk()">
+                            <label class="symptom-label" for="erythema"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="erythema">Merah di Kulit</span><p class="text-xs mt-1 text-gray-500" data-i18n="erythemaDesc">Ada bercak merah di sekitar kateter</p></div></label>
+                            <input type="checkbox" class="symptom-checkbox" id="swelling" onchange="calculateRisk()">
+                            <label class="symptom-label" for="swelling"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="swelling">Bengkak atau Terasa Hangat</span><p class="text-xs mt-1 text-gray-500" data-i18n="swellingDesc">Bagian sekitar kateter membengkak</p></div></label>
+                            <input type="checkbox" class="symptom-checkbox" id="purulent" onchange="calculateRisk()">
+                            <label class="symptom-label" for="purulent"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="purulent">Keluar Nanah</span><p class="text-xs mt-1 text-gray-500" data-i18n="purulentDesc">Ada cairan kuning atau hijau</p></div></label>
+                            <input type="checkbox" class="symptom-checkbox" id="tenderness" onchange="calculateRisk()">
+                            <label class="symptom-label" for="tenderness"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="tenderness">Nyeri bila Ditekan</span><p class="text-xs mt-1 text-gray-500" data-i18n="tendernessDesc">Terasa sakit saat ditekan</p></div></label>
+                            <input type="checkbox" class="symptom-checkbox" id="tunnelInfection" onchange="calculateRisk()">
+                            <label class="symptom-label" for="tunnelInfection"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="tunnelInfection">Infeksi di Jalur Bawah Kulit</span><p class="text-xs mt-1 text-gray-500" data-i18n="tunnelInfectionDesc">Merah sepanjang jalur kateter</p></div></label>
+                        </div>
+                        <h4 class="text-sm font-semibold mb-3 text-gray-600 uppercase tracking-wider" data-i18n="systemicInfection">Infeksi di Seluruh Tubuh</h4>
+                        <div class="space-y-3">
+                            <input type="checkbox" class="symptom-checkbox" id="fever" onchange="calculateRisk()">
+                            <label class="symptom-label" for="fever"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="fever">Demam (Suhu di atas 38 C)</span><p class="text-xs mt-1 text-gray-500" data-i18n="feverDesc">Badan panas atau menggigil</p></div></label>
+                            <input type="checkbox" class="symptom-checkbox" id="chills" onchange="calculateRisk()">
+                            <label class="symptom-label" for="chills"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="chills">Menggigil Hebat</span><p class="text-xs mt-1 text-gray-500" data-i18n="chillsDesc">Gemetar tak tertahankan</p></div></label>
+                            <input type="checkbox" class="symptom-checkbox" id="hypotension" onchange="calculateRisk()">
+                            <label class="symptom-label" for="hypotension"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="hypotension">Tekanan Darah Rendah</span><p class="text-xs mt-1 text-gray-500" data-i18n="hypotensionDesc">Tekanan darah di bawah 90</p></div></label>
+                            <input type="checkbox" class="symptom-checkbox" id="leukocytosis" onchange="calculateRisk()">
+                            <label class="symptom-label" for="leukocytosis"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="leukocytosis">Sel Darah Putih Tinggi</span><p class="text-xs mt-1 text-gray-500" data-i18n="leukocytosisDesc">Hasil lab leukosit tinggi</p></div></label>
+                            <input type="checkbox" class="symptom-checkbox" id="malaise" onchange="calculateRisk()">
+                            <label class="symptom-label" for="malaise"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="malaise">Lemas dan Tidak Enak Badan</span><p class="text-xs mt-1 text-gray-500" data-i18n="malaiseDesc">Merasa lelah dan tidak bertenaga</p></div></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center bg-orange-100">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800" data-i18n="dysfunctionTitle">Gangguan Aliran Darah</h3>
+                                <p class="text-xs text-gray-500" data-i18n="dysfunctionSubtitle">Masalah pada kateter</p>
+                            </div>
+                        </div>
+                        <span class="badge badge-green" id="dysfunctionBadge" data-i18n="riskLow">Rendah</span>
+                    </div>
+                    <div class="p-5">
+                        <h4 class="text-sm font-semibold mb-3 text-gray-600 uppercase tracking-wider" data-i18n="flowPressure">Masalah Aliran & Tekanan</h4>
+                        <div class="space-y-3 mb-6">
+                            <input type="checkbox" class="symptom-checkbox" id="lowFlow" onchange="calculateRisk()">
+                            <label class="symptom-label" for="lowFlow"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="lowFlow">Aliran Darah Lambat</span><p class="text-xs mt-1 text-gray-500" data-i18n="lowFlowDesc">Mesin sering bunyi alarm</p></div></label>
+                            <input type="checkbox" class="symptom-checkbox" id="arterialAlarm" onchange="calculateRisk()">
+                            <label class="symptom-label" for="arterialAlarm"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="arterialAlarm">Alarm Tarikan Darah</span><p class="text-xs mt-1 text-gray-500" data-i18n="arterialAlarmDesc">Alarm saat menarik darah</p></div></label>
+                            <input type="checkbox" class="symptom-checkbox" id="venousAlarm" onchange="calculateRisk()">
+                            <label class="symptom-label" for="venousAlarm"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="venousAlarm">Alarm Kembalinya Darah</span><p class="text-xs mt-1 text-gray-500" data-i18n="venousAlarmDesc">Alarm saat mengembalikan darah</p></div></label>
+                        </div>
+                        <h4 class="text-sm font-semibold mb-3 text-gray-600 uppercase tracking-wider" data-i18n="obstructionSigns">Tanda-Tanda Sumbatan</h4>
+                        <div class="space-y-3">
+                            <input type="checkbox" class="symptom-checkbox" id="flushDifficulty" onchange="calculateRisk()">
+                            <label class="symptom-label" for="flushDifficulty"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="flushDifficulty">Susah Disuntik Cairan</span><p class="text-xs mt-1 text-gray-500" data-i18n="flushDifficultyDesc">Ada hambatan saat menyuntik</p></div></label>
+                            <input type="checkbox" class="symptom-checkbox" id="positionDependent" onchange="calculateRisk()">
+                            <label class="symptom-label" for="positionDependent"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="positionDependent">Aliran Berubah Saat Bergerak</span><p class="text-xs mt-1 text-gray-500" data-i18n="positionDependentDesc">Aliran berubah saat berubah posisi</p></div></label>
+                            <input type="checkbox" class="symptom-checkbox" id="visibleClot" onchange="calculateRisk()">
+                            <label class="symptom-label" for="visibleClot"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="visibleClot">Ada Gumpalan Darah</span><p class="text-xs mt-1 text-gray-500" data-i18n="visibleClotDesc">Gumpalan terlihat di selang</p></div></label>
+                            <input type="checkbox" class="symptom-checkbox" id="recirculation" onchange="calculateRisk()">
+                            <label class="symptom-label" for="recirculation"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="recirculation">Darah Sirkulasi Tinggi</span><p class="text-xs mt-1 text-gray-500" data-i18n="recirculationDesc">Perlu cek lebih lanjut</p></div></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex flex-wrap gap-4 justify-center">
+                <button class="action-btn btn-primary" onclick="calculateRisk()">
+                    <span data-i18n="calculateBtn">Hitung Skor Risiko</span>
+                </button>
+                <button class="action-btn btn-secondary" onclick="resetForm()">
+                    <span data-i18n="resetBtn">Ulang</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results-section" class="section">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="card lg:col-span-1">
+                    <div class="card-header"><h3 class="font-semibold text-teal-700" data-i18n="overallRiskScore">Skor Risiko Total</h3></div>
+                    <div class="p-6 text-center">
+                        <div class="relative inline-block mb-4">
+                            <svg class="progress-ring" width="160" height="160">
+                                <circle cx="80" cy="80" r="70" fill="none" stroke="#f3f4f6" stroke-width="12"/>
+                                <circle id="progressCircle" class="progress-ring-circle" cx="80" cy="80" r="70" fill="none" stroke="#10b981" stroke-width="12" stroke-linecap="round" stroke-dasharray="439.8" stroke-dashoffset="439.8"/>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span class="text-5xl font-bold text-gray-800" id="totalScore">0</span>
+                                <span class="text-sm text-gray-500" data-i18n="points">poin</span>
+                            </div>
+                        </div>
+                        <div id="overallBadge" class="badge badge-green justify-center w-full" data-i18n="riskLow">Risiko Rendah</div>
+                        <p class="mt-4 text-sm text-gray-600" id="riskSummary" data-i18n="riskSummaryDefault">Pasien tidak menunjukkan tanda-tanda masalah pada kateter.</p>
+                    </div>
+                </div>
+
+                <div class="card lg:col-span-2">
+                    <div class="card-header"><h3 class="font-semibold text-teal-700" data-i18n="riskBreakdown">Rincian Faktor Risiko</h3></div>
+                    <div class="p-5">
+                        <div class="space-y-4">
+                            <div><div class="flex justify-between items-center mb-2"><span class="text-sm font-medium text-gray-700" data-i18n="infectionRisk">Risiko Infeksi</span><span class="text-sm font-semibold text-red-500" id="infectionScoreDisplay">0/15</span></div><div class="risk-meter"><div class="risk-fill bg-emerald-400" id="infectionBar" style="width: 0%;"></div></div></div>
+                            <div><div class="flex justify-between items-center mb-2"><span class="text-sm font-medium text-gray-700" data-i18n="dysfunctionRisk">Risiko Gangguan Aliran</span><span class="text-sm font-semibold text-orange-500" id="dysfunctionScoreDisplay">0/14</span></div><div class="risk-meter"><div class="risk-fill bg-orange-400" id="dysfunctionBar" style="width: 0%;"></div></div></div>
+                            <div><div class="flex justify-between items-center mb-2"><span class="text-sm font-medium text-gray-700" data-i18n="patientRiskFactors">Faktor Risiko Pasien</span><span class="text-sm font-semibold text-purple-500" id="patientScoreDisplay">0/8</span></div><div class="risk-meter"><div class="risk-fill bg-purple-400" id="patientBar" style="width: 0%;"></div></div></div>
+                            <div><div class="flex justify-between items-center mb-2"><span class="text-sm font-medium text-gray-700" data-i18n="durationRisk">Risiko Lama Pemasangan</span><span class="text-sm font-semibold text-teal-500" id="durationScoreDisplay">0/5</span></div><div class="risk-meter"><div class="risk-fill bg-teal-400" id="durationBar" style="width: 0%;"></div></div></div>
+                        </div>
+                        <div class="mt-6">
+                            <h4 class="text-sm font-semibold mb-3 text-gray-600" data-i18n="identifiedFindings">Hal-Hal yang Ditemukan</h4>
+                            <div id="findingsList" class="space-y-2"><p class="text-sm text-gray-400 italic" data-i18n="noFindings">Belum ada temuan.</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations -->
+            <div class="card mt-6">
+                <div class="card-header"><h3 class="font-semibold text-teal-700" data-i18n="clinicalRecommendations">Saran Tindakan</h3></div>
+                <div class="p-5"><div id="recommendations" class="space-y-4"></div></div>
+            </div>
+
+            <!-- SEND REPORT SECTION -->
+            <div class="card mt-6 border-purple-200 bg-purple-50/30">
+                <div class="card-header border-purple-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center bg-purple-100">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#8b5cf6"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.94 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.52-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479c0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487 1.054.453 1.875.709 2.51.903.999.306 1.905.26 2.623.159.801-.112 2.468-1.009 2.817-1.984.349-.976.349-1.81.245-1.984z"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-purple-800" data-i18n="sendReportTitle">Kirim Laporan Assessment</h3>
+                            <p class="text-xs text-purple-600" data-i18n="sendReportDesc">Kirim hasil penilaian ini ke tim medis via WhatsApp</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Contact 1 -->
+                        <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-purple-100 shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold text-sm">RA</div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">Riza Arum A</p>
+                                    <p class="text-xs text-gray-500">082227707573</p>
+                                </div>
+                            </div>
+                            <button onclick="sendWhatsApp('6282227707573')" class="wa-card-btn">
+                                <span data-i18n="sendBtn">Kirim</span>
+                            </button>
+                        </div>
+                        <!-- Contact 2 -->
+                        <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-purple-100 shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">NY</div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">Novian Y</p>
+                                    <p class="text-xs text-gray-500">082338446604</p>
+                                </div>
+                            </div>
+                            <button onclick="sendWhatsApp('6282338446604')" class="wa-card-btn">
+                                <span data-i18n="sendBtn">Kirim</span>
+                            </button>
+                        </div>
+                        <!-- Contact 3 -->
+                        <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-purple-100 shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-bold text-sm">M</div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">Mia</p>
+                                    <p class="text-xs text-gray-500">085708354577</p>
+                                </div>
+                            </div>
+                            <button onclick="sendWhatsApp('6285708354577')" class="wa-card-btn">
+                                <span data-i18n="sendBtn">Kirim</span>
+                            </button>
+                        </div>
+                        <!-- Contact 4 -->
+                        <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-purple-100 shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 font-bold text-sm">FR</div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">Fahrur Roji</p>
+                                    <p class="text-xs text-gray-500">087859584003</p>
+                                </div>
+                            </div>
+                            <button onclick="sendWhatsApp('6287859584003')" class="wa-card-btn">
+                                <span data-i18n="sendBtn">Kirim</span>
+                            </button>
+                        </div>
+                        <!-- Contact 5 -->
+                        <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-purple-100 shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-sm">IW</div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">Iman Waluyo</p>
+                                    <p class="text-xs text-gray-500">087812203039</p>
+                                </div>
+                            </div>
+                            <button onclick="sendWhatsApp('6287812203039')" class="wa-card-btn">
+                                <span data-i18n="sendBtn">Kirim</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- END SEND REPORT SECTION -->
+
+            <!-- Emergency Contacts -->
+            <div class="card mt-6 bg-green-50 border-green-200" id="emergencyContacts" style="display: none;">
+                <div class="card-header border-green-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center bg-green-100">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 12h-1.5c-.83 0-1.5-.67-1.5-1.5V9c0-.83.67-1.5 1.5-1.5H12c.83 0 1.5.67 1.5 1.5v1.5c0 .83-.67 1.5-1.5 1.5zm-1.5-3c-.28 0-.5.22-.5.5v1.5c0 .28.22.5.5.5H12c.28 0 .5-.22.5-.5V9c0-.28-.22-.5-.5-.5h-1.5z"/><path d="M20.5 16.5h-1c-.83 0-1.5-.67-1.5-1.5v-1.5c0-.83.67-1.5 1.5-1.5h1c.83 0 1.5.67 1.5 1.5V15c0 .83-.67 1.5-1.5 1.5zm-1-3c-.28 0-.5.22-.5.5V15c0 .28.22.5.5.5h1c.28 0 .5-.22.5-.5v-1.5c0-.28-.22-.5-.5-.5h-1z"/><path d="M4.5 16.5h-1C2.67 16.5 2 15.83 2 15v-1.5c0-.83.67-1.5 1.5-1.5h1c.83 0 1.5.67 1.5 1.5V15c0 .83-.67 1.5-1.5 1.5zm-1-3c-.28 0-.5.22-.5.5V15c0 .28.22.5.5.5h1c.28 0 .5-.22.5-.5v-1.5c0-.28-.22-.5-.5-.5h-1z"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-green-800" data-i18n="emergencyContacts">Kontak Darurat</h3>
+                            <p class="text-xs text-green-600" data-i18n="emergencyContactsDesc">Hubungi tim medis jika hasilnya berisiko tinggi</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <a href="https://wa.me/6282227707573" target="_blank" class="wa-card">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center bg-green-100"><svg width="24" height="24" viewBox="0 0 24 24" fill="#22c55e"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div>
+                            <div><p class="font-semibold text-gray-800">Riza Arum A</p><p class="text-xs text-gray-500">082227707573</p></div>
+                        </a>
+                        <a href="https://wa.me/6282338446604" target="_blank" class="wa-card">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center bg-green-100"><svg width="24" height="24" viewBox="0 0 24 24" fill="#22c55e"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div>
+                            <div><p class="font-semibold text-gray-800">Novian Y</p><p class="text-xs text-gray-500">082338446604</p></div>
+                        </a>
+                        <a href="https://wa.me/6285708354577" target="_blank" class="wa-card">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center bg-green-100"><svg width="24" height="24" viewBox="0 0 24 24" fill="#22c55e"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div>
+                            <div><p class="font-semibold text-gray-800">Mia</p><p class="text-xs text-gray-500">085708354577</p></div>
+                        </a>
+                        <a href="https://wa.me/6287859584003" target="_blank" class="wa-card">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center bg-green-100"><svg width="24" height="24" viewBox="0 0 24 24" fill="#22c55e"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div>
+                            <div><p class="font-semibold text-gray-800">Fahrur Roji</p><p class="text-xs text-gray-500">087859584003</p></div>
+                        </a>
+                        <a href="https://wa.me/6287812203039" target="_blank" class="wa-card">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center bg-green-100"><svg width="24" height="24" viewBox="0 0 24 24" fill="#22c55e"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div>
+                            <div><p class="font-semibold text-gray-800">Iman Waluyo</p><p class="text-xs text-gray-500">087812203039</p></div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Protocols Section -->
+        <div id="protocols-section" class="section">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card">
+                    <div class="card-header"><h3 class="font-semibold text-gray-800" data-i18n="infectionProtocol">Panduan Mengatasi Infeksi</h3></div>
+                    <div class="p-5 space-y-4">
+                        <div class="p-4 bg-red-50 border-l-4 border-red-400 rounded-r-lg"><h4 class="font-semibold text-red-700" data-i18n="immediateActions">1. Langkah Pertama</h4><ul class="text-sm mt-2 space-y-1 text-gray-700 list-disc list-inside"><li data-i18n="infAction1">Hubungi dokter ginjal segera</li><li data-i18n="infAction2">Hentikan pemberian heparin</li><li data-i18n="infAction3">Siapkan sampel kultur darah</li><li data-i18n="infAction4">Catat semua gejala</li></ul></div>
+                        <div class="p-4 bg-orange-50 border-l-4 border-orange-400 rounded-r-lg"><h4 class="font-semibold text-orange-700" data-i18n="diagnosticTests">2. Pemeriksaan</h4><ul class="text-sm mt-2 space-y-1 text-gray-700 list-disc list-inside"><li data-i18n="diagTest1">Kultur darah dari kateter</li><li data-i18n="diagTest2">Hitung darah lengkap</li><li data-i18n="diagTest3">C-reactive protein (CRP)</li><li data-i18n="diagTest4">Kultur usapan jika ada nanah</li></ul></div>
+                        <div class="p-4 bg-green-50 border-l-4 border-green-400 rounded-r-lg"><h4 class="font-semibold text-green-700" data-i18n="treatmentConsider">3. Pengobatan</h4><ul class="text-sm mt-2 space-y-1 text-gray-700 list-disc list-inside"><li data-i18n="treat1">Antibiotik sesuai hasil kultur</li><li data-i18n="treat2">Rendaman antibiotik</li><li data-i18n="treat3">Pertimbangkan pencabutan</li><li data-i18n="treat4">Pantau tanda sepsis</li></ul></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3 class="font-semibold text-gray-800" data-i18n="dysfunctionProtocol">Panduan Gangguan Aliran</h3></div>
+                    <div class="p-5 space-y-4">
+                        <div class="p-4 bg-purple-50 border-l-4 border-purple-400 rounded-r-lg"><h4 class="font-semibold text-purple-700" data-i18n="immediateActions">1. Langkah Pertama</h4><ul class="text-sm mt-2 space-y-1 text-gray-700 list-disc list-inside"><li data-i18n="dysAction1">Ubah posisi pasien</li><li data-i18n="dysAction2">Tukar posisi selang</li><li data-i18n="dysAction3">Suntik saline cepat</li><li data-i18n="dysAction4">Cek selang tertekuk</li></ul></div>
+                        <div class="p-4 bg-teal-50 border-l-4 border-teal-400 rounded-r-lg"><h4 class="font-semibold text-teal-700" data-i18n="thrombolyticIntervention">2. Obat Pelancar</h4><ul class="text-sm mt-2 space-y-1 text-gray-700 list-disc list-inside"><li data-i18n="throm1">Rendaman tPA (Alteplase)</li><li data-i18n="throm2">Diamkan 30-60 menit</li><li data-i18n="throm3">Boleh diulang</li><li data-i18n="throm4">Catat hasilnya</li></ul></div>
+                        <div class="p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg"><h4 class="font-semibold text-blue-700" data-i18n="furtherEval">3. Evaluasi Lanjutan</h4><ul class="text-sm mt-2 space-y-1 text-gray-700 list-disc list-inside"><li data-i18n="eval1">Rontgen pembuluh darah</li><li data-i18n="eval2">Cek penyempitan</li><li data-i18n="eval3">Pertimbangkan ganti kateter</li><li data-i18n="eval4">Evaluasi selaput fibrin</li></ul></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Literature Section -->
+        <div id="literature-section" class="section">
+            <div class="card">
+                <div class="card-header"><h3 class="font-semibold text-teal-700" data-i18n="clinicalEvidence">Bukti Ilmiah & Referensi</h3></div>
+                <div class="p-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="p-6 bg-gradient-to-br from-teal-50 to-white rounded-xl border border-teal-200">
+                            <h4 class="font-bold text-teal-800 mb-3" data-i18n="crbsiTitle">Infeksi Darah Akibat Kateter (CRBSI)</h4>
+                            <p class="text-sm text-gray-600 leading-relaxed" data-i18n="crbsiDesc">CRBSI adalah infeksi yang menyebar melalui aliran darah akibat kateter vena sentral. Ini adalah komplikasi serius pada pasien cuci darah. Menurut NIH, CRBSI menjadi penyebab utama kematian dan rawat inap.</p>
+                        </div>
+                        <div class="p-6 bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-200">
+                            <h4 class="font-bold text-purple-800 mb-3" data-i18n="cathDysfunctionTitle">Gangguan Fungsi Kateter</h4>
+                            <p class="text-sm text-gray-600 leading-relaxed" data-i18n="cathDysfunctionDesc">Kateter dikatakan bermasalah jika tidak bisa mengalirkan darah dengan lancar (biasanya di bawah 250-300 mL/menit) untuk cuci darah yang efektif.</p>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <h4 class="font-semibold text-gray-700 mb-3 uppercase text-sm tracking-wider" data-i18n="refGuidelines">Referensi Pedoman</h4>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-3 py-1 bg-teal-100 text-teal-800 text-sm font-medium rounded-full">NIH Guidelines</span>
+                            <span class="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">NKF KDOQI 2019</span>
+                            <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full">CDC 2017</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="relative z-10 mt-12 py-6 border-t border-gray-200 bg-white/50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="logo-pulse"></div>
+                    <p class="text-sm text-gray-600 font-medium">CVC Early Warning System</p>
+                </div>
+                <div class="signature">
+                    <span class="text-gray-400">Based on NIH, NKF, CDC Guidelines</span>
+                    <span class="text-purple-500 font-semibold">Created by Iman Waluyo</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ==================== TRANSLATIONS ====================
+        var translations = {
+            id: {
+                subtitle: "Sistem Peringatan Dini Kateter",
+                login: "Masuk", register: "Daftar", logout: "Keluar",
+                navAssessment: "Penilaian", navResults: "Hasil", navProtocols: "Panduan", navLiterature: "Referensi",
+                loginTitle: "Login Pasien", username: "Username", usernamePlaceholder: "Masukkan username", password: "Password", passwordPlaceholder: "Masukkan password", loginBtn: "Login",
+                noAccount: "Belum punya akun?", registerHere: "Daftar disini", registerTitle: "Daftar Pasien Baru", uploadPhoto: "Klik untuk upload foto",
+                fullName: "Nama Lengkap", fullNamePlaceholder: "Nama lengkap", createUsername: "Buat username", createPassword: "Buat password", phone: "No. HP", phonePlaceholder: "Contoh: 081234567890", registerBtn: "Daftar", haveAccount: "Sudah punya akun?", loginHere: "Login disini",
+                patientInfo: "Data Pasien", patientId: "ID Pasien", patientIdPlaceholder: "Masukkan ID", age: "Usia", agePlaceholder: "Tahun",
+                cvcLocation: "Lokasi Kateter", locIJ: "Leher (Internal Jugular)", locFemoral: "Paha (Femoral)", locSubclavian: "Dada (Subclavian)",
+                daysInserted: "Lama Terpasang", daysPlaceholder: "Hari", diabetes: "Penyakit Gula (Diabetes)", lowAlbumin: "Kurang Gizi (Albumin Rendah)", immunocompromised: "Daya Tahan Tubuh Lemah",
+                infectionTitle: "Tanda-Tanda Infeksi", infectionSubtitle: "Cek di sekitar kateter", localInfection: "Infeksi di Tempat Kateter",
+                erythema: "Merah di Kulit", erythemaDesc: "Ada bercak merah di sekitar kateter",
+                swelling: "Bengkak atau Terasa Hangat", swellingDesc: "Bagian sekitar kateter membengkak",
+                purulent: "Keluar Nanah", purulentDesc: "Ada cairan kuning atau hijau",
+                tenderness: "Nyeri bila Ditekan", tendernessDesc: "Terasa sakit saat ditekan",
+                tunnelInfection: "Infeksi di Jalur Bawah Kulit", tunnelInfectionDesc: "Merah sepanjang jalur kateter",
+                systemicInfection: "Infeksi di Seluruh Tubuh",
+                fever: "Demam (Suhu di atas 38 C)", feverDesc: "Badan panas atau menggigil",
+                chills: "Menggigil Hebat", chillsDesc: "Gemetar tak tertahankan",
+                hypotension: "Tekanan Darah Rendah", hypotensionDesc: "Tekanan darah di bawah 90",
+                leukocytosis: "Sel Darah Putih Tinggi", leukocytosisDesc: "Hasil lab leukosit tinggi",
+                malaise: "Lemas dan Tidak Enak Badan", malaiseDesc: "Merasa lelah dan tidak bertenaga",
+                dysfunctionTitle: "Gangguan Aliran Darah", dysfunctionSubtitle: "Masalah pada kateter",
+                flowPressure: "Masalah Aliran & Tekanan",
+                lowFlow: "Aliran Darah Lambat", lowFlowDesc: "Mesin sering bunyi alarm",
+                arterialAlarm: "Alarm Tarikan Darah", arterialAlarmDesc: "Alarm saat menarik darah",
+                venousAlarm: "Alarm Kembalinya Darah", venousAlarmDesc: "Alarm saat mengembalikan darah",
+                obstructionSigns: "Tanda-Tanda Sumbatan",
+                flushDifficulty: "Susah Disuntik Cairan", flushDifficultyDesc: "Ada hambatan saat menyuntik",
+                positionDependent: "Aliran Berubah Saat Bergerak", positionDependentDesc: "Aliran berubah saat berubah posisi",
+                visibleClot: "Ada Gumpalan Darah", visibleClotDesc: "Gumpalan terlihat di selang",
+                recirculation: "Darah Sirkulasi Tinggi", recirculationDesc: "Perlu cek lebih lanjut",
+                calculateBtn: "Hitung Skor Risiko", resetBtn: "Ulang", sendBtn: "Kirim",
+                overallRiskScore: "Skor Risiko Total", points: "poin",
+                riskLow: "Rendah", riskModerate: "Sedang", riskHigh: "Tinggi", riskCritical: "Kritis", riskElevated: "Tinggi",
+                riskSummaryDefault: "Pasien tidak menunjukkan tanda-tanda masalah pada kateter.",
+                riskBreakdown: "Rincian Faktor Risiko",
+                infectionRisk: "Risiko Infeksi", dysfunctionRisk: "Risiko Gangguan Aliran",
+                patientRiskFactors: "Faktor Risiko Pasien", durationRisk: "Risiko Lama Pemasangan",
+                identifiedFindings: "Hal-Hal yang Ditemukan", noFindings: "Belum ada temuan.",
+                emergencyContacts: "Kontak Darurat", emergencyContactsDesc: "Hubungi tim medis jika hasilnya berisiko tinggi",
+                sendReportTitle: "Kirim Laporan Assessment", sendReportDesc: "Kirim hasil penilaian ini ke tim medis via WhatsApp",
+                clinicalRecommendations: "Saran Tindakan",
+                infectionProtocol: "Panduan Mengatasi Infeksi", immediateActions: "1. Langkah Pertama",
+                infAction1: "Hubungi dokter ginjal segera", infAction2: "Hentikan pemberian heparin", infAction3: "Siapkan sampel kultur darah", infAction4: "Catat semua gejala",
+                diagnosticTests: "2. Pemeriksaan", diagTest1: "Kultur darah dari kateter", diagTest2: "Hitung darah lengkap", diagTest3: "C-reactive protein (CRP)", diagTest4: "Kultur usapan jika ada nanah",
+                treatmentConsider: "3. Pengobatan", treat1: "Antibiotik sesuai hasil kultur", treat2: "Rendaman antibiotik", treat3: "Pertimbangkan pencabutan", treat4: "Pantau tanda sepsis",
+                dysfunctionProtocol: "Panduan Gangguan Aliran",
+                dysAction1: "Ubah posisi pasien", dysAction2: "Tukar posisi selang", dysAction3: "Suntik saline cepat", dysAction4: "Cek selang tertekuk",
+                thrombolyticIntervention: "2. Obat Pelancar", throm1: "Rendaman tPA (Alteplase)", throm2: "Diamkan 30-60 menit", throm3: "Boleh diulang", throm4: "Catat hasilnya",
+                furtherEval: "3. Evaluasi Lanjutan", eval1: "Rontgen pembuluh darah", eval2: "Cek penyempitan", eval3: "Pertimbangkan ganti kateter", eval4: "Evaluasi selaput fibrin",
+                clinicalEvidence: "Bukti Ilmiah & Referensi", crbsiTitle: "Infeksi Darah Akibat Kateter (CRBSI)",
+                crbsiDesc: "CRBSI adalah infeksi yang menyebar melalui aliran darah akibat kateter vena sentral. Ini adalah komplikasi serius pada pasien cuci darah. Menurut NIH, CRBSI menjadi penyebab utama kematian dan rawat inap.",
+                cathDysfunctionTitle: "Gangguan Fungsi Kateter",
+                cathDysfunctionDesc: "Kateter dikatakan bermasalah jika tidak bisa mengalirkan darah dengan lancar (biasanya di bawah 250-300 mL/menit) untuk cuci darah yang efektif.",
+                refGuidelines: "Referensi Pedoman",
+                summaryCritical: "KRITIS: Perlu tindakan medis segera.", summaryHigh: "RISIKO TINGGI: Perlu pemeriksaan cepat.", summaryModerate: "RISIKO SEDANG: Perlu pengawasan ketat.", summaryLow: "RISIKO RENDAH: Lanjutkan pemantauan rutin.",
+                recCriticalTitle: "KRITIS - Tindakan Segera", recHighTitle: "RISIKO TINGGI", recModerateTitle: "RISIKO SEDANG", recStandardTitle: "Pemantauan Rutin", recDysfunctionTitle: "Penanganan Gangguan Aliran",
+                findingErythema: "Kemerahan", findingSwelling: "Pembengkakan", findingPurulent: "Nanah", findingTenderness: "Nyeri tekan", findingTunnel: "Infeksi jalur bawah kulit",
+                findingFever: "Demam", findingChills: "Menggigil", findingHypotension: "Hipotensi", findingLeukocytosis: "Leukositosis", findingMalaise: "Lemas",
+                findingLowFlow: "Aliran lambat", findingArterial: "Alarm tarikan", findingVenous: "Alarm balik", findingFlush: "Susah disuntik", findingPosition: "Posisi tergantung", findingClot: "Gumpalan darah", findingRecirculation: "Sirkulasi tinggi",
+                findingDiabetes: "Diabetes", findingAlbumin: "Albumin rendah", findingImmuno: "Imun lemah", findingDays: ">20 hari", findingFemoral: "Lokasi paha",
+                // WA Message specific
+                waReportTitle: "LAPORAN ASSESSMENT CVC EWS", waPatient: "PASIEN", waAge: "Usia", waLocation: "Lokasi", waDays: "Lama Pasang", waRisk: "RISIKO", waScore: "Skor", waFindings: "TEMUAN", waRec: "SARAN", waSender: "Dikirim dari CVC EWS"
+            },
+            en: {
+                subtitle: "Central Venous Catheter Early Warning System",
+                login: "Login", register: "Register", logout: "Logout",
+                navAssessment: "Assessment", navResults: "Results", navProtocols: "Protocols", navLiterature: "References",
+                loginTitle: "Patient Login", username: "Username", usernamePlaceholder: "Enter username", password: "Password", passwordPlaceholder: "Enter password", loginBtn: "Login",
+                noAccount: "No account?", registerHere: "Register here", registerTitle: "New Patient Registration", uploadPhoto: "Click to upload photo",
+                fullName: "Full Name", fullNamePlaceholder: "Full name", createUsername: "Create username", createPassword: "Create password", phone: "Phone", phonePlaceholder: "e.g., 081234567890", registerBtn: "Register", haveAccount: "Have an account?", loginHere: "Login here",
+                patientInfo: "Patient Data", patientId: "Patient ID", patientIdPlaceholder: "Enter ID", age: "Age", agePlaceholder: "Years",
+                cvcLocation: "Catheter Location", locIJ: "Neck (Internal Jugular)", locFemoral: "Thigh (Femoral)", locSubclavian: "Chest (Subclavian)",
+                daysInserted: "Duration Inserted", daysPlaceholder: "Days", diabetes: "Diabetes Mellitus", lowAlbumin: "Hypoalbuminemia", immunocompromised: "Immunocompromised",
+                infectionTitle: "Signs of Infection", infectionSubtitle: "Check around catheter", localInfection: "Local Infection",
+                erythema: "Skin Redness", erythemaDesc: "Red patches around catheter",
+                swelling: "Swelling or Warmth", swellingDesc: "Area around catheter is swollen",
+                purulent: "Purulent Discharge", purulentDesc: "Yellow or green fluid",
+                tenderness: "Tenderness on Pressure", tendernessDesc: "Pain when pressed",
+                tunnelInfection: "Tunnel Tract Infection", tunnelInfectionDesc: "Redness along catheter path",
+                systemicInfection: "Systemic Infection",
+                fever: "Fever (Temp > 38 C)", feverDesc: "Body feels hot or chills",
+                chills: "Severe Chills", chillsDesc: "Uncontrollable shivering",
+                hypotension: "Low Blood Pressure", hypotensionDesc: "BP below 90",
+                leukocytosis: "High White Blood Cells", leukocytosisDesc: "Lab results show high leukocytes",
+                malaise: "Weakness and Malaise", malaiseDesc: "Feeling tired and low energy",
+                dysfunctionTitle: "Blood Flow Issues", dysfunctionSubtitle: "Catheter problems",
+                flowPressure: "Flow & Pressure Issues",
+                lowFlow: "Slow Blood Flow", lowFlowDesc: "Machine alarms frequently",
+                arterialAlarm: "Arterial Alarm", arterialAlarmDesc: "Alarm when drawing blood",
+                venousAlarm: "Venous Alarm", venousAlarmDesc: "Alarm when returning blood",
+                obstructionSigns: "Obstruction Signs",
+                flushDifficulty: "Difficulty Flushing", flushDifficultyDesc: "Resistance when injecting",
+                positionDependent: "Position-Dependent Flow", positionDependentDesc: "Flow changes with position",
+                visibleClot: "Visible Blood Clot", visibleClotDesc: "Clot seen in tubing",
+                recirculation: "High Recirculation", recirculationDesc: "Needs further check",
+                calculateBtn: "Calculate Risk Score", resetBtn: "Reset", sendBtn: "Send",
+                overallRiskScore: "Total Risk Score", points: "points",
+                riskLow: "Low", riskModerate: "Moderate", riskHigh: "High", riskCritical: "Critical", riskElevated: "Elevated",
+                riskSummaryDefault: "Patient shows no signs of catheter problems.",
+                riskBreakdown: "Risk Factor Breakdown",
+                infectionRisk: "Infection Risk", dysfunctionRisk: "Dysfunction Risk",
+                patientRiskFactors: "Patient Risk Factors", durationRisk: "Duration Risk",
+                identifiedFindings: "Findings", noFindings: "No findings yet.",
+                emergencyContacts: "Emergency Contacts", emergencyContactsDesc: "Contact medical team if high risk",
+                sendReportTitle: "Send Assessment Report", sendReportDesc: "Send this assessment result to medical team via WhatsApp",
+                clinicalRecommendations: "Recommendations",
+                infectionProtocol: "Infection Management Protocol", immediateActions: "1. Immediate Steps",
+                infAction1: "Contact nephrologist immediately", infAction2: "Stop heparin", infAction3: "Prepare blood culture", infAction4: "Record all symptoms",
+                diagnosticTests: "2. Diagnostics", diagTest1: "Blood culture from catheter", diagTest2: "Complete blood count", diagTest3: "C-reactive protein", diagTest4: "Swab culture if pus",
+                treatmentConsider: "3. Treatment", treat1: "Culture-guided antibiotics", treat2: "Antibiotic lock", treat3: "Consider removal", treat4: "Monitor for sepsis",
+                dysfunctionProtocol: "Dysfunction Management Protocol",
+                dysAction1: "Reposition patient", dysAction2: "Swap lines", dysAction3: "Rapid saline flush", dysAction4: "Check for kinks",
+                thrombolyticIntervention: "2. Thrombolytics", throm1: "tPA (Alteplase) lock", throm2: "Dwell 30-60 mins", throm3: "Can repeat", throm4: "Record outcome",
+                furtherEval: "3. Further Evaluation", eval1: "Fistulogram", eval2: "Check for stenosis", eval3: "Consider exchange", eval4: "Evaluate fibrin sheath",
+                clinicalEvidence: "Clinical Evidence & References", crbsiTitle: "Catheter-Related Bloodstream Infection (CRBSI)",
+                crbsiDesc: "CRBSI is a bloodstream infection from a central venous catheter, a serious complication in dialysis patients. According to NIH, CRBSI is a leading cause of mortality and hospitalization.",
+                cathDysfunctionTitle: "Catheter Dysfunction",
+                cathDysfunctionDesc: "A catheter is considered dysfunctional if it cannot maintain adequate blood flow (typically > 250-300 mL/min) for effective dialysis.",
+                refGuidelines: "Guidelines References",
+                summaryCritical: "CRITICAL: Immediate medical action required.", summaryHigh: "HIGH RISK: Urgent evaluation needed.", summaryModerate: "MODERATE RISK: Enhanced monitoring.", summaryLow: "LOW RISK: Continue routine monitoring.",
+                recCriticalTitle: "CRITICAL - Immediate Action", recHighTitle: "HIGH RISK", recModerateTitle: "MODERATE RISK", recStandardTitle: "Standard Monitoring", recDysfunctionTitle: "Dysfunction Management",
+                findingErythema: "Redness", findingSwelling: "Swelling", findingPurulent: "Pus", findingTenderness: "Tenderness", findingTunnel: "Tunnel infection",
+                findingFever: "Fever", findingChills: "Chills", findingHypotension: "Hypotension", findingLeukocytosis: "Leukocytosis", findingMalaise: "Malaise",
+                findingLowFlow: "Low flow", findingArterial: "Arterial alarm", findingVenous: "Venous alarm", findingFlush: "Flush difficulty", findingPosition: "Position-dependent", findingClot: "Visible clot", findingRecirculation: "High recirculation",
+                findingDiabetes: "Diabetes", findingAlbumin: "Hypoalbuminemia", findingImmuno: "Immunocompromised", findingDays: ">20 days", findingFemoral: "Femoral site",
+                // WA Message specific
+                waReportTitle: "CVC EWS ASSESSMENT REPORT", waPatient: "PATIENT", waAge: "Age", waLocation: "Location", waDays: "Duration", waRisk: "RISK LEVEL", waScore: "Score", waFindings: "FINDINGS", waRec: "RECOMMENDATIONS", waSender: "Sent from CVC EWS"
+            }
+        };
+
+        // ==================== GLOBAL STATE ====================
+        var currentLang = 'id';
+        var currentUser = null;
+        var photoDataUrl = null;
+        var infectionScore = 0; var dysfunctionScore = 0; var patientRiskScore = 0; var durationScore = 0;
+
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTime(); setInterval(updateTime, 1000);
+            loadUser();
+            calculateRisk();
+            setLanguage('id');
+        });
+
+        // ==================== LANGUAGE FUNCTIONS ====================
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.getElementById('langId').classList.toggle('active', lang === 'id');
+            document.getElementById('langEn').classList.toggle('active', lang === 'en');
+            
+            var t = translations[lang];
+            
+            document.querySelectorAll('[data-i18n]').forEach(function(el) {
+                var key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+            
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+                var key = el.getAttribute('data-i18n-placeholder');
+                if (t[key]) el.setAttribute('placeholder', t[key]);
+            });
+
+            updateDynamicText();
+        }
+
+        function updateDynamicText() {
+            var total = infectionScore + dysfunctionScore + patientRiskScore + durationScore;
+            updateDisplay(total);
+        }
+
+        // ==================== TAB SWITCHING ====================
+        function switchTab(tabName) {
+            document.querySelectorAll('.nav-tab').forEach(function(btn) {
+                btn.classList.remove('active');
+                if(btn.getAttribute('data-tab') === tabName) btn.classList.add('active');
+            });
+            document.querySelectorAll('.section').forEach(function(sec) {
+                sec.classList.remove('active');
+            });
+            var target = document.getElementById(tabName + '-section');
+            if(target) target.classList.add('active');
+        }
+
+        // ==================== MODAL FUNCTIONS ====================
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        function switchModal(from, to) { closeModal(from); setTimeout(function(){ openModal(to); }, 200); }
+
+        // ==================== USER MANAGEMENT ====================
+        function loadUser() {
+            var saved = localStorage.getItem('cvcUser');
+            if (saved) { currentUser = JSON.parse(saved); showLoggedIn(); }
+        }
+        function showLoggedIn() {
+            document.getElementById('loggedOutState').classList.add('hidden');
+            document.getElementById('loggedInState').classList.remove('hidden');
+            document.getElementById('headerUserName').textContent = currentUser.name;
+            if (currentUser.photo) document.getElementById('headerAvatar').src = currentUser.photo;
+            document.getElementById('patientId').value = currentUser.username;
+        }
+        function showLoggedOut() {
+            document.getElementById('loggedOutState').classList.remove('hidden');
+            document.getElementById('loggedInState').classList.add('hidden');
+        }
+        function toggleDropdown() { document.getElementById('userDropdown').classList.toggle('active'); }
+        document.addEventListener('click', function(e) {
+            var dd = document.getElementById('userDropdown'); var li = document.getElementById('loggedInState');
+            if (dd && li && !li.contains(e.target)) dd.classList.remove('active');
+        });
+        
+        function handleRegister() {
+            var name = document.getElementById('registerName').value.trim();
+            var username = document.getElementById('registerUsername').value.trim();
+            var password = document.getElementById('registerPassword').value;
+            if (!name || !username || !password) { alert('Lengkapi semua field'); return; }
+            var users = JSON.parse(localStorage.getItem('cvcUsers') || '[]');
+            if (users.find(function(u) { return u.username === username; })) { alert('Username ada'); return; }
+            var newUser = { name: name, username: username, password: password, photo: photoDataUrl };
+            users.push(newUser);
+            localStorage.setItem('cvcUsers', JSON.stringify(users));
+            localStorage.setItem('cvcUser', JSON.stringify(newUser));
+            currentUser = newUser;
+            showLoggedIn();
+            closeModal('registerModal');
+            alert('Berhasil!');
+        }
+        function handleLogin() {
+            var u = document.getElementById('loginUsername').value.trim();
+            var p = document.getElementById('loginPassword').value;
+            var users = JSON.parse(localStorage.getItem('cvcUsers') || '[]');
+            var user = users.find(function(x) { return x.username === u && x.password === p; });
+            if (user) { currentUser = user; localStorage.setItem('cvcUser', JSON.stringify(user)); showLoggedIn(); closeModal('loginModal'); }
+            else alert('Salah');
+        }
+        function handleLogout() { localStorage.removeItem('cvcUser'); currentUser = null; showLoggedOut(); }
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) { photoDataUrl = e.target.result; document.getElementById('previewPhoto').src = photoDataUrl; };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // ==================== RISK CALCULATION ====================
+        function calculateRisk() {
+            var local = ['erythema', 'swelling', 'purulent', 'tenderness', 'tunnelInfection'];
+            var systemic = ['fever', 'chills', 'hypotension', 'leukocytosis', 'malaise'];
+            infectionScore = 0;
+            local.forEach(function(i) { if(document.getElementById(i).checked) infectionScore += 2; });
+            systemic.forEach(function(i) { if(document.getElementById(i).checked) infectionScore += 3; });
+
+            var dys = ['lowFlow', 'arterialAlarm', 'venousAlarm', 'flushDifficulty', 'positionDependent', 'visibleClot', 'recirculation'];
+            dysfunctionScore = 0;
+            dys.forEach(function(i) { if(document.getElementById(i).checked) dysfunctionScore += 2; });
+
+            patientRiskScore = 0;
+            if(document.getElementById('diabetes').checked) patientRiskScore += 2;
+            if(document.getElementById('lowAlbumin').checked) patientRiskScore += 2;
+            if(document.getElementById('immunocompromised').checked) patientRiskScore += 2;
+            if(document.getElementById('patientAge').value > 60) patientRiskScore += 1;
+            if(document.getElementById('cvcLocation').value === 'femoral') patientRiskScore += 2;
+
+            durationScore = 0;
+            var days = parseInt(document.getElementById('daysInserted').value) || 0;
+            if (days > 20) durationScore = 3; else if (days > 14) durationScore = 2; else if (days > 7) durationScore = 1;
+
+            updateDisplay(infectionScore + dysfunctionScore + patientRiskScore + durationScore);
+        }
+
+        function updateDisplay(total) {
+            document.getElementById('totalScore').textContent = total;
+            var circle = document.getElementById('progressCircle');
+            var pct = Math.min(total / 42, 1);
+            circle.style.strokeDashoffset = 439.8 * (1 - pct);
+            var color = '#22c55e'; if(total > 20) color = '#ef4444'; else if(total > 12) color = '#f97316'; else if(total > 5) color = '#fbbf24';
+            circle.style.stroke = color;
+
+            updateBadges(total);
+            updateBars('infection', infectionScore, 15);
+            updateBars('dysfunction', dysfunctionScore, 14);
+            updateBars('patient', patientRiskScore, 8);
+            updateBars('duration', durationScore, 5);
+            updateSummary(total);
+            updateFindingsList();
+            updateRecommendations(total);
+            document.getElementById('emergencyContacts').style.display = total > 12 ? 'block' : 'none';
+        }
+
+        function updateBadges(total) {
+            var t = translations[currentLang];
+            var ib = document.getElementById('infectionBadge');
+            ib.textContent = infectionScore > 12 ? t.riskCritical : infectionScore > 6 ? t.riskHigh : t.riskLow;
+            ib.className = 'badge ' + (infectionScore > 12 ? 'badge-red' : infectionScore > 6 ? 'badge-orange' : 'badge-green');
+
+            var db = document.getElementById('dysfunctionBadge');
+            db.textContent = dysfunctionScore > 8 ? t.riskHigh : dysfunctionScore > 4 ? t.riskElevated : t.riskLow;
+            db.className = 'badge ' + (dysfunctionScore > 8 ? 'badge-orange' : dysfunctionScore > 4 ? 'badge-yellow' : 'badge-green');
+
+            var ob = document.getElementById('overallBadge');
+            var lvl = t.riskLow; var cls = 'badge-green';
+            if(total > 20) { lvl = t.riskCritical; cls = 'badge-red'; }
+            else if(total > 12) { lvl = t.riskHigh; cls = 'badge-orange'; }
+            else if(total > 5) { lvl = t.riskModerate; cls = 'badge-yellow'; }
+            ob.textContent = lvl; ob.className = 'badge justify-center w-full ' + cls;
+        }
+
+        function updateBars(cat, score, max) {
+            document.getElementById(cat+'ScoreDisplay').textContent = score+'/'+max;
+            var bar = document.getElementById(cat+'Bar');
+            var pct = (score/max)*100;
+            bar.style.width = pct+'%';
+            var color = '#22c55e'; if(pct > 70) color = '#ef4444'; else if(pct > 40) color = '#f97316'; else if(pct > 20) color = '#fbbf24';
+            bar.style.background = color;
+        }
+
+        function updateSummary(total) {
+            var t = translations[currentLang];
+            var s = document.getElementById('riskSummary');
+            if(total > 20) s.textContent = t.summaryCritical;
+            else if(total > 12) s.textContent = t.summaryHigh;
+            else if(total > 5) s.textContent = t.summaryModerate;
+            else s.textContent = t.summaryLow;
+        }
+
+        function updateFindingsList() {
+            var t = translations[currentLang];
+            var list = document.getElementById('findingsList');
+            var items = [];
+            if(document.getElementById('erythema').checked) items.push(t.findingErythema);
+            if(document.getElementById('swelling').checked) items.push(t.findingSwelling);
+            if(document.getElementById('purulent').checked) items.push(t.findingPurulent);
+            if(document.getElementById('tenderness').checked) items.push(t.findingTenderness);
+            if(document.getElementById('tunnelInfection').checked) items.push(t.findingTunnel);
+            if(document.getElementById('fever').checked) items.push(t.findingFever);
+            if(document.getElementById('chills').checked) items.push(t.findingChills);
+            if(document.getElementById('hypotension').checked) items.push(t.findingHypotension);
+            if(document.getElementById('leukocytosis').checked) items.push(t.findingLeukocytosis);
+            if(document.getElementById('malaise').checked) items.push(t.findingMalaise);
+            if(document.getElementById('lowFlow').checked) items.push(t.findingLowFlow);
+            if(document.getElementById('arterialAlarm').checked) items.push(t.findingArterial);
+            if(document.getElementById('venousAlarm').checked) items.push(t.findingVenous);
+            if(document.getElementById('flushDifficulty').checked) items.push(t.findingFlush);
+            if(document.getElementById('positionDependent').checked) items.push(t.findingPosition);
+            if(document.getElementById('visibleClot').checked) items.push(t.findingClot);
+            if(document.getElementById('recirculation').checked) items.push(t.findingRecirculation);
+            
+            var days = parseInt(document.getElementById('daysInserted').value) || 0;
+            if(days > 20) items.push(t.findingDays);
+            if(document.getElementById('cvcLocation').value === 'femoral') items.push(t.findingFemoral);
+
+            if(items.length === 0) list.innerHTML = '<p class="text-sm text-gray-400 italic">'+t.noFindings+'</p>';
+            else list.innerHTML = items.map(function(i){ return '<div class="p-2 bg-gray-50 rounded text-sm text-gray-700">'+i+'</div>'; }).join('');
+        }
+
+        function updateRecommendations(total) {
+            var t = translations[currentLang];
+            var r = document.getElementById('recommendations');
+            var html = '';
+            
+            if(total > 20) {
+                html += '<div class="alert-banner bg-red-50 border-red-200"><div><p class="font-bold text-red-700">'+t.recCriticalTitle+'</p><p class="text-sm text-gray-600 mt-1">'+t.summaryCritical+'</p></div></div>';
+            } else if (total > 12) {
+                html += '<div class="alert-banner bg-orange-50 border-orange-200"><div><p class="font-bold text-orange-700">'+t.recHighTitle+'</p><p class="text-sm text-gray-600 mt-1">'+t.summaryHigh+'</p></div></div>';
+            } else if (total > 5) {
+                html += '<div class="alert-banner bg-yellow-50 border-yellow-200"><div><p class="font-bold text-yellow-700">'+t.recModerateTitle+'</p><p class="text-sm text-gray-600 mt-1">'+t.summaryModerate+'</p></div></div>';
+            } else {
+                html += '<div class="alert-banner bg-green-50 border-green-200"><div><p class="font-bold text-green-700">'+t.recStandardTitle+'</p><p class="text-sm text-gray-600 mt-1">'+t.summaryLow+'</p></div></div>';
+            }
+            
+            if(dysfunctionScore > 4) {
+                html += '<div class="alert-banner bg-purple-50 border-purple-200 mt-4"><div><p class="font-bold text-purple-700">'+t.recDysfunctionTitle+'</p></div></div>';
+            }
+            r.innerHTML = html;
+        }
+
+        function resetForm() {
+            document.querySelectorAll('.symptom-checkbox').forEach(function(c){ c.checked = false; });
+            document.querySelectorAll('input[type="number"], input[type="text"]').forEach(function(i){ if(i.id !== 'patientId') i.value = ''; });
+            document.querySelector('select').selectedIndex = 0;
+            calculateRisk();
+            if(currentUser) document.getElementById('patientId').value = currentUser.username;
+        }
+        function updateTime() { document.getElementById('headerTime').textContent = new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}); }
+
+        // ==================== WHATSAPP SENDER ====================
+        function sendWhatsApp(phoneNumber) {
+            var t = translations[currentLang];
+            
+            // Gather Data
+            var patientName = currentUser ? currentUser.name : (document.getElementById('registerName').value || 'Unknown');
+            var patientId = document.getElementById('patientId').value || '-';
+            var age = document.getElementById('patientAge').value || '-';
+            var days = document.getElementById('daysInserted').value || '-';
+            var locationEl = document.getElementById('cvcLocation');
+            var locationText = locationEl.options[locationEl.selectedIndex].text;
+            var totalScore = infectionScore + dysfunctionScore + patientRiskScore + durationScore;
+            
+            // Determine Risk Level Text
+            var riskLevel = t.riskLow;
+            if (totalScore > 20) riskLevel = t.riskCritical;
+            else if (totalScore > 12) riskLevel = t.riskHigh;
+            else if (totalScore > 5) riskLevel = t.riskModerate;
+
+            // Build Findings String
+            var findings = [];
+            var symptomList = [
+                {id: 'erythema', key: 'findingErythema'}, {id: 'swelling', key: 'findingSwelling'}, {id: 'purulent', key: 'findingPurulent'},
+                {id: 'tenderness', key: 'findingTenderness'}, {id: 'tunnelInfection', key: 'findingTunnel'}, {id: 'fever', key: 'findingFever'},
+                {id: 'chills', key: 'findingChills'}, {id: 'hypotension', key: 'findingHypotension'}, {id: 'leukocytosis', key: 'findingLeukocytosis'},
+                {id: 'malaise', key: 'findingMalaise'}, {id: 'lowFlow', key: 'findingLowFlow'}, {id: 'arterialAlarm', key: 'findingArterial'},
+                {id: 'venousAlarm', key: 'findingVenous'}, {id: 'flushDifficulty', key: 'findingFlush'}, {id: 'positionDependent', key: 'findingPosition'},
+                {id: 'visibleClot', key: 'findingClot'}, {id: 'recirculation', key: 'findingRecirculation'}
+            ];
+            
+            symptomList.forEach(function(item) {
+                if (document.getElementById(item.id).checked) {
+                    findings.push(t[item.key]);
+                }
+            });
+
+            // Add Comorbidities
+            if (document.getElementById('diabetes').checked) findings.push(t.findingDiabetes);
+            if (document.getElementById('lowAlbumin').checked) findings.push(t.findingAlbumin);
+            if (document.getElementById('immunocompromised').checked) findings.push(t.findingImmuno);
+            if ((parseInt(document.getElementById('daysInserted').value) || 0) > 20) findings.push(t.findingDays);
+            if (document.getElementById('cvcLocation').value === 'femoral') findings.push(t.findingFemoral);
+
+            var findingsStr = findings.length > 0 ? findings.join('\n- ') : 'None';
+
+            // Build Message
+            var message = `*${t.waReportTitle}*\n\n` +
+                `====================\n` +
+                `*${t.waPatient}*\n` +
+                `ID: ${patientId}\n` +
+                `Nama: ${patientName}\n` +
+                `${t.waAge}: ${age} | ${t.waLocation}: ${locationText}\n` +
+                `${t.waDays}: ${days} days\n` +
+                `====================\n\n` +
+                `*${t.waRisk}*\n` +
+                `${t.waScore}: ${totalScore}\n` +
+                `Level: ${riskLevel}\n\n` +
+                `*${t.waFindings}*:\n- ${findingsStr}\n\n` +
+                `*${t.waRec}*:\n${t['summary' + (totalScore > 20 ? 'Critical' : totalScore > 12 ? 'High' : totalScore > 5 ? 'Moderate' : 'Low')]}\n\n` +
+                `====================\n` +
+                `${t.waSender}`;
+
+            var encodedMsg = encodeURIComponent(message);
+            var url = `https://wa.me/${phoneNumber}?text=${encodedMsg}`;
+            window.open(url, '_blank');
+        }
+    </script>
+</body>
+</html>
+  
