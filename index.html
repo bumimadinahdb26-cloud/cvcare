@@ -27,7 +27,6 @@
             color: #134e4a;
             min-height: 100vh;
             overflow-x: hidden;
-            /* Mencegah pull-to-refresh yang mengganggu di beberapa browser */
             overscroll-behavior-y: contain; 
         }
 
@@ -43,7 +42,7 @@
         .blob-1 { width: 600px; height: 600px; background: #ccfbf1; top: -200px; left: -200px; }
         .blob-2 { width: 500px; height: 500px; background: #ede9fe; bottom: -150px; right: -150px; }
 
-        /* Header Styling */
+        /* Header Styling - TINGGI DITAMBAH 200px */
         .header {
             background: rgba(255, 255, 255, 0.98);
             border-bottom: 1px solid var(--border-color);
@@ -52,20 +51,21 @@
             z-index: 9999;
             backdrop-filter: blur(10px);
             box-shadow: 0 4px 20px rgba(13, 148, 136, 0.05);
+            
+            /* Perubahan Tinggi */
+            min-height: 200px; 
+            display: flex;
+            align-items: center; /* Posisi konten di tengah vertikal */
         }
 
         .header-logo-img { 
-            height: 36px; /* Ukuran default mobile */
+            height: 80px; /* Logo diperbesar agar proporsional di header besar */
             width: auto; 
             object-fit: contain; 
         }
 
-        @media (min-width: 640px) {
-            .header-logo-img { height: 42px; } /* Ukuran desktop */
-        }
-
         .lang-switcher {
-            display: none; /* Sembunyikan di mobile, tampilkan di sm ke atas */
+            display: none;
             background: #f8fafc;
             border-radius: 999px;
             padding: 4px;
@@ -94,7 +94,7 @@
         }
 
         .nav-tab {
-            padding: 12px 16px; /* Padding dikurangi sedikit untuk mobile */
+            padding: 12px 16px;
             background: transparent;
             border: none;
             color: #0f766e;
@@ -139,7 +139,7 @@
 
         .card-header {
             background: linear-gradient(90deg, rgba(240, 253, 250, 1) 0%, rgba(255, 255, 255, 1) 100%);
-            padding: 16px 20px; /* Padding disesuaikan */
+            padding: 16px 20px;
             border-bottom: 1px solid var(--border-color);
         }
         
@@ -220,7 +220,7 @@
         }
 
         .action-btn {
-            padding: 12px 20px; /* Padding mobile friendly */
+            padding: 12px 20px;
             border-radius: 999px;
             font-weight: 600;
             font-size: 14px;
@@ -289,7 +289,7 @@
             display: none;
             align-items: center;
             justify-content: center;
-            padding: 16px; /* Padding untuk mobile */
+            padding: 16px;
         }
 
         .modal-overlay.active { display: flex; }
@@ -361,7 +361,7 @@
             border: 1px solid #e5e7eb;
             border-radius: 12px;
             padding: 8px;
-            min-width: 180px; /* Lebar disesuaikan */
+            min-width: 180px;
             display: none;
             z-index: 10002; 
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
@@ -385,25 +385,19 @@
         .dropdown-item:hover { background: #f0fdfa; color: var(--accent-teal); }
 
         .avatar {
-            width: 36px; height: 36px; /* Ukuran mobile */
+            width: 40px; height: 40px;
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid var(--accent-purple);
             background: #f5f3ff;
         }
-        @media (min-width: 640px) {
-            .avatar { width: 40px; height: 40px; }
-        }
 
         .avatar-large {
-            width: 80px; height: 80px; /* Ukuran mobile */
+            width: 80px; height: 80px;
             border-radius: 50%;
             object-fit: cover;
             border: 4px solid var(--accent-purple);
             background: #f5f3ff;
-        }
-        @media (min-width: 640px) {
-            .avatar-large { width: 100px; height: 100px; }
         }
         
         .contact-card {
@@ -444,7 +438,7 @@
         }
         
         .status-connected {
-            display: none; /* Sembunyikan di mobile untuk hemat ruang */
+            display: none;
             align-items: center;
             gap: 8px;
             padding: 8px 16px;
@@ -596,8 +590,8 @@
             </div>
             <div class="p-6">
                 <div class="text-center mb-6">
-                    <img src="https://raw.githubusercontent.com/bumimadinahdb26-cloud/cvcare/main/logo.png" alt="Logo" class="h-16 mx-auto mb-4" onerror="this.style.display='none'">
-                    <h2 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-purple-600">CVC Early Warning System</h2>
+                    <img src="https://raw.githubusercontent.com/bumimadinahdb26-cloud/cvcare/main/logo.png" alt="Logo" class="h-20 mx-auto mb-4" onerror="this.style.display='none'">
+                    <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-purple-600">CVC Early Warning System</h2>
                     <p class="text-gray-500 mt-1 text-sm" data-i18n="appSubtitle">Sistem Peringatan Dini Kateter</p>
                 </div>
                 
@@ -624,20 +618,18 @@
 
     <!-- Header -->
     <header class="header relative z-10" id="header-section">
-        <div class="max-w-7xl mx-auto px-4 py-3">
+        <div class="max-w-7xl mx-auto px-4 w-full">
             <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2 cursor-pointer" onclick="openModal('infoModal')">
+                <div class="flex items-center gap-3 cursor-pointer" onclick="openModal('infoModal')">
                     <img 
                         src="https://raw.githubusercontent.com/bumimadinahdb26-cloud/cvcare/main/logo.png" 
                         alt="Logo CVC" 
                         class="header-logo-img"
-                        onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%230d9488\' stroke-width=\'2\'%3E%3Ccircle cx=\'12\' cy=\'12\' r=\'10\'/%3E%3Cpath d=\'M12 6v6l4 2\'/%3E%3C/svg%3E'; this.style.width='40px'; this.style.height='40px';"
+                        onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%230d9488\' stroke-width=\'2\'%3E%3Ccircle cx=\'12\' cy=\'12\' r=\'10\'/%3E%3Cpath d=\'M12 6v6l4 2\'/%3E%3C/svg%3E'; this.style.width='80px'; this.style.height='80px';"
                     >
                     <div>
-                        <!-- Ukuran font diperkecil di mobile -->
-                        <h1 class="text-base sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-purple-600">CVC Early Warning System</h1>
-                        <!-- Subtitle disembunyikan di mobile -->
-                        <p class="text-xs text-gray-500 hidden sm:block" data-i18n="appSubtitle">Sistem Peringatan Dini Kateter</p>
+                        <h1 class="text-xl sm:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-purple-600">CVC Early Warning</h1>
+                        <p class="text-xs sm:text-sm text-gray-500" data-i18n="appSubtitle">System v2.2</p>
                     </div>
                 </div>
                 
@@ -702,8 +694,8 @@
     </nav>
 
     <!-- Main Content -->
-    <!-- PT-20 added to prevent header overlap -->
-    <main class="relative z-10 max-w-7xl mx-auto px-4 pt-6 pb-8">
+    <!-- PT-56 (padding-top: 14rem / 224px) added to clear the 200px sticky header -->
+    <main class="relative z-10 max-w-7xl mx-auto px-4 pt-56 pb-8">
         
         <!-- Assessment Section -->
         <div id="assessment-section" class="section active">
@@ -1147,7 +1139,7 @@
                 haveAccount: "Sudah punya akun?",
                 loginHere: "Login disini",
                 infoTitle: "Informasi Aplikasi",
-                appSubtitle: "Sistem Peringatan Dini Kateter",
+                appSubtitle: "System v2.2",
                 version: "Versi",
                 year: "Tahun",
                 purposeTitle: "Tujuan Aplikasi",
@@ -1250,7 +1242,7 @@
                 haveAccount: "Have an account?",
                 loginHere: "Login here",
                 infoTitle: "Application Information",
-                appSubtitle: "Central Venous Catheter Early Warning System",
+                appSubtitle: "System v2.2",
                 version: "Version",
                 year: "Year",
                 purposeTitle: "Application Purpose",
@@ -1356,7 +1348,6 @@
             updateTime();
             setInterval(updateTime, 1000);
             
-            // Detect User Language
             const userLang = navigator.language || navigator.userLanguage; 
             if (userLang.startsWith('en')) {
                 setLanguage('en');
@@ -1372,20 +1363,14 @@
         // ==================== LANGUAGE SWITCHER ====================
         function setLanguage(lang) {
             currentLang = lang;
-            
-            // Toggle buttons
             document.getElementById('langId').classList.toggle('active', lang === 'id');
             document.getElementById('langEn').classList.toggle('active', lang === 'en');
-            
-            // Update all elements with data-i18n
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (translations[lang] && translations[lang][key]) {
                     el.textContent = translations[lang][key];
                 }
             });
-            
-            // Update placeholders
             document.querySelectorAll('[placeholder]').forEach(el => {
                 const key = el.getAttribute('id'); 
                 if (key === 'loginUsername') el.placeholder = lang === 'id' ? 'Masukkan username' : 'Enter username';
@@ -1402,7 +1387,6 @@
             });
         }
 
-        // ==================== GUIDE READER ====================
         function readGuide() {
             voiceEnabled = true;
             const steps = [
@@ -1410,16 +1394,13 @@
                 translations[currentLang].guideStep2,
                 translations[currentLang].guideStep3
             ];
-            
             const fullText = steps.join('. ');
-            
             const utterance = new SpeechSynthesisUtterance(fullText);
             utterance.lang = currentLang === 'id' ? 'id-ID' : 'en-US';
             utterance.rate = 0.9;
             speechSynthesis.speak(utterance);
         }
 
-        // ==================== VOICE ====================
         function toggleVoice() {
             voiceEnabled = !voiceEnabled;
             document.getElementById('voiceBtn').classList.toggle('active', voiceEnabled);
@@ -1432,11 +1413,9 @@
             }
         }
 
-        // ==================== SPREADSHEET ====================
         async function sendToSpreadsheet() {
             const totalScore = infectionScore + dysfunctionScore + patientRiskScore + durationScore;
             const riskLevel = getRiskLevel(totalScore);
-            
             const data = {
                 patientId: document.getElementById('patientId').value || '-',
                 patientName: document.getElementById('patientNameInput').value || '-',
@@ -1450,18 +1429,11 @@
                 findings: getFindingsList(),
                 comorbidities: getComorbidities()
             };
-            
             try {
                 const btn = event.target;
                 btn.innerHTML = currentLang === 'id' ? 'Mengirim...' : 'Sending...';
                 btn.disabled = true;
-                
-                await fetch(WEB_APP_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify(data)
-                });
-                
+                await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
                 btn.innerHTML = currentLang === 'id' ? 'Terkirim!' : 'Sent!';
                 btn.classList.remove('btn-primary');
                 btn.classList.add('bg-green-500', 'text-white');
@@ -1476,14 +1448,12 @@
             }
         }
 
-        // ==================== HISTORY ====================
         function saveToHistory() {
             if(!currentUser) {
                 alert(currentLang === 'id' ? 'Silakan login terlebih dahulu.' : 'Please login first.');
                 openModal('loginModal');
                 return;
             }
-
             const totalScore = infectionScore + dysfunctionScore + patientRiskScore + durationScore;
             const record = {
                 timestamp: new Date().toLocaleString('id-ID'),
@@ -1492,11 +1462,9 @@
                 score: totalScore,
                 level: getRiskLevel(totalScore).text
             };
-
             let history = JSON.parse(localStorage.getItem('cvc_user_history') || '[]');
             history.unshift(record);
             localStorage.setItem('cvc_user_history', JSON.stringify(history));
-            
             alert(currentLang === 'id' ? 'Hasil berhasil disimpan.' : 'Result saved successfully.');
             loadHistory();
         }
@@ -1504,12 +1472,10 @@
         function loadHistory() {
             const container = document.getElementById('historyContainer');
             const history = JSON.parse(localStorage.getItem('cvc_user_history') || '[]');
-            
             if(history.length === 0) {
                 container.innerHTML = `<p class="text-gray-500 text-center py-8" data-i18n="noHistory">${translations[currentLang].noHistory}</p>`;
                 return;
             }
-
             container.innerHTML = history.map(item => `
                 <div class="history-item">
                     <div class="flex justify-between items-start">
@@ -1549,21 +1515,19 @@
             return c;
         }
 
-        // ==================== TABS & MODALS ====================
         function switchTab(tabName) {
             document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
             document.querySelector(`.nav-tab[data-tab="${tabName}"]`).classList.add('active');
             document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
             document.getElementById(tabName + '-section').classList.add('active');
             document.getElementById('userDropdown').classList.remove('active');
-            window.scrollTo(0,0); // Scroll to top on tab change
+            window.scrollTo(0,0);
         }
 
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
         function switchModal(from, to) { closeModal(from); setTimeout(() => openModal(to), 200); }
 
-        // ==================== USER ====================
         function loadUser() {
             const saved = localStorage.getItem('cvcUser');
             if (saved) { currentUser = JSON.parse(saved); showLoggedIn(); }
@@ -1625,32 +1589,26 @@
             }
         }
 
-        // ==================== RISK CALCULATION ====================
         function calculateRisk() {
             const local = ['erythema', 'swelling', 'purulent', 'tenderness', 'tunnelInfection'];
             infectionScore = 0;
             local.forEach(i => { if (document.getElementById(i)?.checked) infectionScore += 2; });
-            
             const systemic = ['fever', 'chills', 'hypotension', 'leukocytosis', 'malaise'];
             systemic.forEach(i => { if (document.getElementById(i)?.checked) infectionScore += 3; });
-
             const dys = ['lowFlow', 'arterialAlarm', 'venousAlarm', 'flushDifficulty', 'positionDependent', 'visibleClot', 'recirculation'];
             dysfunctionScore = 0;
             dys.forEach(i => { if (document.getElementById(i)?.checked) dysfunctionScore += 2; });
-
             patientRiskScore = 0;
             if (document.getElementById('diabetes')?.checked) patientRiskScore += 2;
             if (document.getElementById('lowAlbumin')?.checked) patientRiskScore += 2;
             if (document.getElementById('immunocompromised')?.checked) patientRiskScore += 2;
             if (parseInt(document.getElementById('patientAge')?.value) > 60) patientRiskScore += 1;
             if (document.getElementById('cvcLocation')?.value === 'femoral') patientRiskScore += 2;
-
             durationScore = 0;
             const days = parseInt(document.getElementById('daysInserted')?.value) || 0;
             if (days > 20) durationScore = 3;
             else if (days > 14) durationScore = 2;
             else if (days > 7) durationScore = 1;
-
             updateDisplay(infectionScore + dysfunctionScore + patientRiskScore + durationScore);
         }
 
@@ -1666,12 +1624,10 @@
             const circle = document.getElementById('progressCircle');
             circle.style.strokeDashoffset = 377 * (1 - Math.min(total / 42, 1));
             circle.style.stroke = total >= 20 ? '#ef4444' : total >= 12 ? '#f97316' : total >= 5 ? '#fbbf24' : '#22c55e';
-
             const risk = getRiskLevel(total);
             document.getElementById('overallBadge').textContent = risk.text;
             document.getElementById('overallBadge').className = `badge justify-center w-full ${risk.class}`;
             document.getElementById('riskSummary').textContent = risk.summary;
-
             updateBar('infection', infectionScore, 15);
             updateBar('dysfunction', dysfunctionScore, 14);
             updateBar('patient', patientRiskScore, 8);
@@ -1712,7 +1668,6 @@
 
         function updateTime() { document.getElementById('headerTime').textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }); }
 
-        // ==================== WHATSAPP ====================
         function sendWhatsApp(phoneNumber) {
             const patientName = document.getElementById('patientNameInput').value || 'Unknown';
             const patientId = document.getElementById('patientId').value || '-';
@@ -1725,9 +1680,7 @@
             const risk = getRiskLevel(totalScore);
             const findings = getFindingsList().join('\n- ') || 'Tidak ada';
             const comorbidities = getComorbidities().join(', ') || 'Tidak ada';
-
             const message = `*LAPORAN CVC EWS*\n====================\nID: ${patientId}\nNama: ${patientName}\nUsia: ${age} th\nInstalasi: ${instalasi}\nRuang: ${ruang}\n====================\nLokasi CVC: ${location}\nLama Terpasang: ${days} hari\n====================\n*SKOR: ${totalScore} (${risk.text})*\n\nTemuan:\n- ${findings}\n\nKomorbid: ${comorbidities}\n\nSaran: ${risk.summary}\n====================\nDikirim dari CVC EWS v2.2`;
-
             window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
         }
     </script>
