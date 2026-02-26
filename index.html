@@ -614,10 +614,71 @@
                 justify-content: space-between;
                 margin-top: 8px;
             }
+                    /* === ROTATE PROMPT OVERLAY === */
+        .rotate-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, #134e4a 0%, #0d9488 100%);
+            z-index: 999999; /* Paling atas */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* Tampilkan overlay hanya di mobile & mode portrait */
+        @media screen and (max-width: 768px) and (orientation: portrait) {
+            .rotate-overlay.active {
+                display: flex;
+            }
+        }
+
+        .rotate-icon {
+            animation: phone-rotate 2s ease-in-out infinite;
+        }
+
+        @keyframes phone-rotate {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
+            100% { transform: rotate(90deg); }
+        }
+        
+        .btn-landscape {
+            margin-top: 24px;
+            padding: 12px 24px;
+            background: white;
+            color: #0d9488;
+            border: none;
+            border-radius: 999px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn-landscape:hover {
+            transform: scale(1.05);
+        }
         }
     </style>
 </head>
 <body>
+        <!-- Rotate Prompt Overlay -->
+    <div id="rotatePrompt" class="rotate-overlay active">
+        <div class="rotate-icon">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                <line x1="12" y1="18" x2="12.01" y2="18"/>
+            </svg>
+        </div>
+        <h2 class="text-2xl font-bold mt-6">Putar Perangkat Anda</h2>
+        <p class="mt-2 opacity-90">Gunakan mode lanskap (horizontal) untuk tampilan terbaik.</p>
+        
+        <button onclick="forceLandscape()" class="btn-landscape">
+            Putar Otomatis (Lanskap)
+        </button>
+    </div>
     <div class="bg-blob blob-1"></div>
     <div class="bg-blob blob-2"></div>
 
@@ -1358,7 +1419,38 @@
             </div>
         </div>
     </footer>
+        // ==================== FORCE LANDSCAPE MODE ====================
+        function forceLandscape() {
+            const docEl = document.documentElement;
+            const rotatePrompt = document.getElementById('rotatePrompt');
 
+            // 1. Coba minta Fullscreen (wajib untuk lock orientation)
+            if (docEl.requestFullscreen) {
+                docEl.requestFullscreen().then(() => {
+                    lockOrientation();
+                }).catch(err => {
+                    console.log("Fullscreen gagal, mencoba lock langsung...");
+                    lockOrientation();
+                });
+            } else {
+                lockOrientation();
+            }
+
+            function lockOrientation() {
+                // 2. Lock ke landscape
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').then(() => {
+                        console.log("Landscape locked");
+                        rotatePrompt.classList.remove('active'); // Sembunyikan overlay
+                    }).catch((error) => {
+                        console.log("Lock orientation tidak didukung atau gagal:", error);
+                        alert('Silakan putar perangkat Anda secara manual ke posisi mendatar.');
+                    });
+                } else {
+                    alert('Browser tidak mendukung kunci rotasi otomatis. Silakan putar manual.');
+                }
+            }
+        }
     <script>
         // ==================== TRANSLATIONS ====================
         const translations = {
