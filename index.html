@@ -660,10 +660,51 @@
         .btn-landscape:hover {
             transform: scale(1.05);
         }
+                    /* === ENTRY SPLASH SCREEN === */
+        #entry-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #134e4a 0%, #0d9488 100%);
+            z-index: 9999999; /* Paling atas, menutup semua */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            transition: opacity 0.5s ease;
+        }
+
+        #entry-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .entry-icon {
+            animation: pulse-entry 2s infinite;
+        }
+
+        @keyframes pulse-entry {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
         }
     </style>
 </head>
 <body>
+        <!-- Entry Splash Screen (Tap to Start) -->
+    <div id="entry-overlay">
+        <div class="entry-icon mb-6">
+            <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="4" y="2" width="16" height="20" rx="2"/>
+                <path d="M12 18h.01"/>
+            </svg>
+        </div>
+        <h2 class="text-2xl font-bold mb-2">CVC Early Warning System</h2>
+        <p class="text-lg opacity-90">Tap Layar untuk Memulai</p>
+        <p class="text-sm opacity-60 mt-4">(Aplikasi akan beralih ke Mode Lanskap)</p>
+    </div>
         <!-- Rotate Prompt Overlay -->
     <div id="rotatePrompt" class="rotate-overlay active">
         <div class="rotate-icon">
@@ -1449,7 +1490,47 @@
                 } else {
                     alert('Browser tidak mendukung kunci rotasi otomatis. Silakan putar manual.');
                 }
+                    // ==================== AUTO LANDSCAPE ON ENTRY ====================
+        const entryOverlay = document.getElementById('entry-overlay');
+
+        function enterLandscapeMode() {
+            const docEl = document.documentElement;
+
+            // 1. Minta Fullscreen (Wajib untuk lock orientation di mobile)
+            let requestFullscreen = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+
+            if (requestFullscreen) {
+                requestFullscreen.call(docEl).then(() => {
+                    lockScreen();
+                }).catch(() => {
+                    lockScreen(); // Coba lock walaupun fullscreen gagal
+                });
+            } else {
+                lockScreen();
             }
+        }
+
+        function lockScreen() {
+            // 2. Lock Orientation ke Landscape
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').then(() => {
+                    console.log("Landscape locked");
+                }).catch((error) => {
+                    console.log("Lock failed:", error);
+                    // Jika gagal, biarkan user rotate manual
+                });
+            }
+            
+            // 3. Hilangkan Overlay
+            entryOverlay.classList.add('hidden');
+            setTimeout(() => {
+                entryOverlay.style.display = 'none';
+            }, 500);
+        }
+
+        // Trigger saat Overlay di-tap/klik (Ini yang memenuhi syarat "User Activation" browser)
+        entryOverlay.addEventListener('click', enterLandscapeMode, { once: true });
+        entryOverlay.addEventListener('touchend', enterLandscapeMode, { once: true });
         }
     <script>
         // ==================== TRANSLATIONS ====================
