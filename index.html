@@ -2,11 +2,10 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CVC Early Warning System v2.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <!-- Driver.js dihapus karena panduan diubah ke teks -->
     
     <style>
         :root {
@@ -28,6 +27,8 @@
             color: #134e4a;
             min-height: 100vh;
             overflow-x: hidden;
+            /* Mencegah pull-to-refresh yang mengganggu di beberapa browser */
+            overscroll-behavior-y: contain; 
         }
 
         h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; }
@@ -42,25 +43,37 @@
         .blob-1 { width: 600px; height: 600px; background: #ccfbf1; top: -200px; left: -200px; }
         .blob-2 { width: 500px; height: 500px; background: #ede9fe; bottom: -150px; right: -150px; }
 
-        /* Header Z-Index ditingkatkan */
+        /* Header Styling */
         .header {
             background: rgba(255, 255, 255, 0.98);
             border-bottom: 1px solid var(--border-color);
             position: sticky;
             top: 0;
-            z-index: 9999; /* Nilai sangat tinggi */
+            z-index: 9999;
             backdrop-filter: blur(10px);
             box-shadow: 0 4px 20px rgba(13, 148, 136, 0.05);
         }
 
-        .header-logo-img { height: 42px; width: auto; object-fit: contain; }
+        .header-logo-img { 
+            height: 36px; /* Ukuran default mobile */
+            width: auto; 
+            object-fit: contain; 
+        }
+
+        @media (min-width: 640px) {
+            .header-logo-img { height: 42px; } /* Ukuran desktop */
+        }
 
         .lang-switcher {
-            display: flex;
+            display: none; /* Sembunyikan di mobile, tampilkan di sm ke atas */
             background: #f8fafc;
             border-radius: 999px;
             padding: 4px;
             border: 1px solid var(--border-color);
+        }
+        
+        @media (min-width: 640px) {
+            .lang-switcher { display: flex; }
         }
 
         .lang-btn {
@@ -81,7 +94,7 @@
         }
 
         .nav-tab {
-            padding: 12px 20px;
+            padding: 12px 16px; /* Padding dikurangi sedikit untuk mobile */
             background: transparent;
             border: none;
             color: #0f766e;
@@ -90,6 +103,11 @@
             transition: all 0.3s ease;
             position: relative;
             white-space: nowrap;
+            font-size: 14px;
+        }
+        
+        @media (min-width: 640px) {
+            .nav-tab { padding: 12px 20px; font-size: 15px; }
         }
 
         .nav-tab::after {
@@ -112,7 +130,6 @@
             border: 1px solid var(--border-color);
             border-radius: 20px;
             overflow: hidden;
-            transition: box-shadow 0.3s ease; /* Hapus transform translateY untuk hindari z-index issue */
             box-shadow: 0 10px 30px -10px rgba(13, 148, 136, 0.1);
         }
         
@@ -122,8 +139,12 @@
 
         .card-header {
             background: linear-gradient(90deg, rgba(240, 253, 250, 1) 0%, rgba(255, 255, 255, 1) 100%);
-            padding: 16px 24px;
+            padding: 16px 20px; /* Padding disesuaikan */
             border-bottom: 1px solid var(--border-color);
+        }
+        
+        @media (min-width: 640px) {
+             .card-header { padding: 16px 24px; }
         }
 
         .symptom-checkbox { display: none; }
@@ -199,16 +220,21 @@
         }
 
         .action-btn {
-            padding: 14px 28px;
+            padding: 12px 20px; /* Padding mobile friendly */
             border-radius: 999px;
             font-weight: 600;
-            font-size: 15px;
+            font-size: 14px;
             cursor: pointer;
             transition: all 0.3s ease;
             border: none;
             display: inline-flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        @media (min-width: 640px) {
+            .action-btn { padding: 14px 28px; font-size: 15px; }
         }
 
         .btn-primary {
@@ -252,17 +278,18 @@
         .progress-ring { transform: rotate(-90deg); }
         .progress-ring-circle { transition: stroke-dashoffset 0.5s ease; }
 
+        /* Modal Overlay */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
             background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(8px);
-            z-index: 10000; /* Paling atas */
+            z-index: 10000; 
             display: none;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 16px; /* Padding untuk mobile */
         }
 
         .modal-overlay.active { display: flex; }
@@ -276,7 +303,7 @@
             overflow-y: auto;
             animation: modalSlide 0.3s ease;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            position: relative; /* Konteks untuk isi modal */
+            position: relative;
             z-index: 10001;
         }
         
@@ -287,6 +314,7 @@
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
+        /* Input Field - Penting untuk Mobile */
         .input-field {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -295,6 +323,7 @@
             color: #134e4a;
             width: 100%;
             transition: all 0.2s ease;
+            font-size: 16px !important; /* Mencegah zoom otomatis di iOS */
         }
 
         .input-field:focus {
@@ -314,6 +343,7 @@
             border: 1px solid #bbf7d0;
             cursor: pointer;
             transition: all 0.2s;
+            white-space: nowrap;
         }
 
         .wa-card-btn:hover {
@@ -322,16 +352,7 @@
             border-color: #22c55e;
         }
 
-        .alert-banner {
-            padding: 16px 20px;
-            border-radius: 16px;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            border: 1px solid;
-        }
-
-        /* Perbaikan Dropdown Z-Index */
+        /* Dropdown Menu Mobile Fix */
         .dropdown-menu {
             position: absolute;
             top: calc(100% + 8px);
@@ -340,9 +361,9 @@
             border: 1px solid #e5e7eb;
             border-radius: 12px;
             padding: 8px;
-            min-width: 200px;
+            min-width: 180px; /* Lebar disesuaikan */
             display: none;
-            z-index: 10002; /* Lebih tinggi dari modal tapi di bawah header/modal-overlay jika perlu */
+            z-index: 10002; 
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
         }
 
@@ -358,35 +379,42 @@
             gap: 12px;
             color: #134e4a;
             font-weight: 500;
+            font-size: 14px;
         }
 
         .dropdown-item:hover { background: #f0fdfa; color: var(--accent-teal); }
 
         .avatar {
-            width: 40px; height: 40px;
+            width: 36px; height: 36px; /* Ukuran mobile */
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid var(--accent-purple);
             background: #f5f3ff;
         }
+        @media (min-width: 640px) {
+            .avatar { width: 40px; height: 40px; }
+        }
 
         .avatar-large {
-            width: 100px; height: 100px;
+            width: 80px; height: 80px; /* Ukuran mobile */
             border-radius: 50%;
             object-fit: cover;
             border: 4px solid var(--accent-purple);
             background: #f5f3ff;
+        }
+        @media (min-width: 640px) {
+            .avatar-large { width: 100px; height: 100px; }
         }
         
         .contact-card {
             background: white;
             border: 1px solid #e5e7eb;
             border-radius: 12px;
-            padding: 12px 16px;
+            padding: 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
+            gap: 8px;
             transition: all 0.3s;
         }
         
@@ -399,7 +427,7 @@
             background: linear-gradient(135deg, #f0fdfa 0%, white 100%);
             border: 1px solid var(--border-color);
             border-radius: 16px;
-            padding: 20px;
+            padding: 16px;
             transition: box-shadow 0.3s;
             display: block;
         }
@@ -412,11 +440,11 @@
             background: linear-gradient(135deg, #f5f3ff 0%, white 100%);
             border: 1px solid #e9d5ff;
             border-radius: 16px;
-            padding: 24px;
+            padding: 20px;
         }
         
         .status-connected {
-            display: flex;
+            display: none; /* Sembunyikan di mobile untuk hemat ruang */
             align-items: center;
             gap: 8px;
             padding: 8px 16px;
@@ -427,6 +455,10 @@
             font-size: 14px;
         }
         
+        @media (min-width: 640px) {
+            .status-connected { display: flex; }
+        }
+
         .status-dot {
             width: 8px;
             height: 8px;
@@ -458,7 +490,7 @@
         .guide-step { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #e5e7eb; }
         .guide-step:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         .guide-step h4 { font-weight: 700; color: #0d9488; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
-        .guide-step p { margin-bottom: 0.5rem; }
+        .guide-step p { margin-bottom: 0.5rem; font-size: 15px; }
         .guide-step ul { list-style-type: disc; margin-left: 1.5rem; color: #4b5563; }
         .guide-step ul li { margin-bottom: 0.25rem; }
 
@@ -564,9 +596,9 @@
             </div>
             <div class="p-6">
                 <div class="text-center mb-6">
-                    <img src="https://raw.githubusercontent.com/bumimadinahdb26-cloud/cvcare/main/logo.png" alt="Logo" class="h-20 mx-auto mb-4" onerror="this.style.display='none'">
-                    <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-purple-600">CVC Early Warning System</h2>
-                    <p class="text-gray-500 mt-1" data-i18n="appSubtitle">Sistem Peringatan Dini Kateter</p>
+                    <img src="https://raw.githubusercontent.com/bumimadinahdb26-cloud/cvcare/main/logo.png" alt="Logo" class="h-16 mx-auto mb-4" onerror="this.style.display='none'">
+                    <h2 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-purple-600">CVC Early Warning System</h2>
+                    <p class="text-gray-500 mt-1 text-sm" data-i18n="appSubtitle">Sistem Peringatan Dini Kateter</p>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4 mb-6">
@@ -593,8 +625,8 @@
     <!-- Header -->
     <header class="header relative z-10" id="header-section">
         <div class="max-w-7xl mx-auto px-4 py-3">
-            <div class="flex items-center justify-between flex-wrap gap-3">
-                <div class="flex items-center gap-3 cursor-pointer" onclick="openModal('infoModal')">
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 cursor-pointer" onclick="openModal('infoModal')">
                     <img 
                         src="https://raw.githubusercontent.com/bumimadinahdb26-cloud/cvcare/main/logo.png" 
                         alt="Logo CVC" 
@@ -602,13 +634,15 @@
                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%230d9488\' stroke-width=\'2\'%3E%3Ccircle cx=\'12\' cy=\'12\' r=\'10\'/%3E%3Cpath d=\'M12 6v6l4 2\'/%3E%3C/svg%3E'; this.style.width='40px'; this.style.height='40px';"
                     >
                     <div>
-                        <h1 class="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-purple-600">CVC Early Warning System</h1>
-                        <p class="text-xs text-gray-500" data-i18n="appSubtitle">Sistem Peringatan Dini Kateter</p>
+                        <!-- Ukuran font diperkecil di mobile -->
+                        <h1 class="text-base sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-purple-600">CVC Early Warning System</h1>
+                        <!-- Subtitle disembunyikan di mobile -->
+                        <p class="text-xs text-gray-500 hidden sm:block" data-i18n="appSubtitle">Sistem Peringatan Dini Kateter</p>
                     </div>
                 </div>
                 
-                <div class="flex items-center gap-2 sm:gap-3">
-                    <div class="lang-switcher hidden sm:flex">
+                <div class="flex items-center gap-2">
+                    <div class="lang-switcher">
                         <button class="lang-btn active" id="langId" onclick="setLanguage('id')">ID</button>
                         <button class="lang-btn" id="langEn" onclick="setLanguage('en')">EN</button>
                     </div>
@@ -622,14 +656,14 @@
                     </button>
                     
                     <div id="loggedOutState" class="flex items-center gap-2">
-                        <button onclick="openModal('loginModal')" class="action-btn btn-secondary text-sm py-2 px-4" data-i18n="login">Login</button>
-                        <button onclick="openModal('registerModal')" class="action-btn btn-primary text-sm py-2 px-4 hidden sm:flex" data-i18n="register">Daftar</button>
+                        <button onclick="openModal('loginModal')" class="action-btn btn-secondary text-xs sm:text-sm py-2 px-3 sm:px-4" data-i18n="login">Login</button>
+                        <button onclick="openModal('registerModal')" class="action-btn btn-primary text-xs sm:text-sm py-2 px-3 sm:px-4 hidden sm:flex" data-i18n="register">Daftar</button>
                     </div>
                     
                     <div id="loggedInState" class="hidden relative">
-                        <div class="flex items-center gap-3 cursor-pointer" onclick="toggleDropdown()">
+                        <div class="flex items-center gap-2 cursor-pointer" onclick="toggleDropdown()">
                             <div class="text-right hidden sm:block">
-                                <p class="text-sm font-semibold text-gray-800" id="headerUserName">Nama Pasien</p>
+                                <p class="text-sm font-semibold text-gray-800" id="headerUserName">Nama</p>
                                 <p class="text-xs text-gray-400" id="headerTime">--:--</p>
                             </div>
                             <img id="headerAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E" class="avatar">
@@ -661,14 +695,15 @@
             <div class="flex gap-1 overflow-x-auto py-2">
                 <button class="nav-tab active" data-tab="assessment" onclick="switchTab('assessment')" data-i18n="navAssessment">Penilaian</button>
                 <button class="nav-tab" data-tab="results" onclick="switchTab('results')" data-i18n="navResults">Hasil</button>
-                <button class="nav-tab" data-tab="panduan" onclick="switchTab('panduan')" data-i18n="navGuide">Panduan & Referensi</button>
+                <button class="nav-tab" data-tab="panduan" onclick="switchTab('panduan')" data-i18n="navGuide">Panduan</button>
                 <button class="nav-tab" data-tab="privacy" onclick="switchTab('privacy')" data-i18n="navPrivacy">Privasi</button>
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="relative z-10 max-w-7xl mx-auto px-4 py-6">
+    <!-- PT-20 added to prevent header overlap -->
+    <main class="relative z-10 max-w-7xl mx-auto px-4 pt-6 pb-8">
         
         <!-- Assessment Section -->
         <div id="assessment-section" class="section active">
@@ -676,22 +711,22 @@
                 <div class="card-header">
                     <h3 class="font-semibold text-teal-700" data-i18n="patientData">Data Pasien</h3>
                 </div>
-                <div class="p-5">
-                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div class="p-4 sm:p-5">
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
                         <div>
-                            <label class="text-xs font-medium mb-2 block text-gray-500" data-i18n="patientId">ID Pasien</label>
-                            <input type="text" class="input-field" id="patientId" placeholder="ID Pasien">
+                            <label class="text-xs font-medium mb-1 block text-gray-500" data-i18n="patientId">ID Pasien</label>
+                            <input type="text" class="input-field" id="patientId" placeholder="ID">
                         </div>
                         <div>
-                            <label class="text-xs font-medium mb-2 block text-gray-500" data-i18n="patientName">Nama Pasien</label>
-                            <input type="text" class="input-field" id="patientNameInput" placeholder="Nama Lengkap">
+                            <label class="text-xs font-medium mb-1 block text-gray-500" data-i18n="patientName">Nama Pasien</label>
+                            <input type="text" class="input-field" id="patientNameInput" placeholder="Nama">
                         </div>
                         <div>
-                            <label class="text-xs font-medium mb-2 block text-gray-500" data-i18n="age">Usia</label>
-                            <input type="number" class="input-field" id="patientAge" placeholder="Tahun">
+                            <label class="text-xs font-medium mb-1 block text-gray-500" data-i18n="age">Usia</label>
+                            <input type="number" class="input-field" id="patientAge" placeholder="Thn">
                         </div>
                         <div>
-                            <label class="text-xs font-medium mb-2 block text-gray-500" data-i18n="installation">Instalasi</label>
+                            <label class="text-xs font-medium mb-1 block text-gray-500" data-i18n="installation">Instalasi</label>
                             <select class="input-field" id="instalasi">
                                 <option value="" data-i18n="select">Pilih...</option>
                                 <option value="RAWAT INAP">Rawat Inap</option>
@@ -702,35 +737,35 @@
                             </select>
                         </div>
                         <div>
-                            <label class="text-xs font-medium mb-2 block text-gray-500" data-i18n="room">Ruang</label>
+                            <label class="text-xs font-medium mb-1 block text-gray-500" data-i18n="room">Ruang</label>
                             <input type="text" class="input-field" id="ruang" placeholder="No. Ruang">
                         </div>
                         <div>
-                            <label class="text-xs font-medium mb-2 block text-gray-500" data-i18n="daysInserted">Lama Terpasang</label>
+                            <label class="text-xs font-medium mb-1 block text-gray-500" data-i18n="daysInserted">Lama Terpasang</label>
                             <input type="number" class="input-field" id="daysInserted" placeholder="Hari">
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                         <div>
-                            <label class="text-xs font-medium mb-2 block text-gray-500" data-i18n="cvcLocation">Lokasi Kateter</label>
+                            <label class="text-xs font-medium mb-1 block text-gray-500" data-i18n="cvcLocation">Lokasi Kateter</label>
                             <select class="input-field" id="cvcLocation">
                                 <option value="internal-jugular" data-i18n="locIJ">Leher (Internal Jugular)</option>
                                 <option value="femoral" data-i18n="locFemoral">Paha (Femoral)</option>
                                 <option value="subclavian" data-i18n="locSubclavian">Dada (Subclavian)</option>
                             </select>
                         </div>
-                        <div class="flex items-end gap-4">
+                        <div class="flex items-end gap-4 flex-wrap">
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" id="diabetes" onchange="calculateRisk()" class="w-4 h-4 text-teal-600 rounded">
-                                <span class="text-sm text-gray-700" data-i18n="diabetes">Diabetes</span>
+                                <span class="text-xs sm:text-sm text-gray-700" data-i18n="diabetes">Diabetes</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" id="lowAlbumin" onchange="calculateRisk()" class="w-4 h-4 text-teal-600 rounded">
-                                <span class="text-sm text-gray-700" data-i18n="lowAlbumin">Albumin Rendah</span>
+                                <span class="text-xs sm:text-sm text-gray-700" data-i18n="lowAlbumin">Albumin Rendah</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" id="immunocompromised" onchange="calculateRisk()" class="w-4 h-4 text-teal-600 rounded">
-                                <span class="text-sm text-gray-700" data-i18n="immuno">Imun Lemah</span>
+                                <span class="text-xs sm:text-sm text-gray-700" data-i18n="immuno">Imun Lemah</span>
                             </label>
                         </div>
                     </div>
@@ -745,37 +780,37 @@
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                             </div>
                             <div>
-                                <h3 class="font-semibold text-gray-800" data-i18n="infectionTitle">Tanda-Tanda Infeksi</h3>
+                                <h3 class="font-semibold text-gray-800" data-i18n="infectionTitle">Tanda Infeksi</h3>
                             </div>
                         </div>
                         <span class="badge badge-low" id="infectionBadge">Low</span>
                     </div>
-                    <div class="p-5">
+                    <div class="p-4 sm:p-5">
                         <h4 class="text-sm font-semibold mb-3 text-gray-600 uppercase tracking-wider" data-i18n="localInfection">Infeksi Lokal</h4>
                         <div class="space-y-3 mb-6">
                             <input type="checkbox" class="symptom-checkbox" id="erythema" onchange="calculateRisk()">
-                            <label class="symptom-label" for="erythema"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="erythema">Kemerahan di Kulit</span><p class="text-xs mt-1 text-gray-500" data-i18n="erythemaDesc">Ada bercak merah di sekitar kateter</p></div></label>
+                            <label class="symptom-label" for="erythema"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="erythema">Kemerahan</span></div></label>
                             <input type="checkbox" class="symptom-checkbox" id="swelling" onchange="calculateRisk()">
-                            <label class="symptom-label" for="swelling"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="swelling">Bengkak / Terasa Hangat</span></div></label>
+                            <label class="symptom-label" for="swelling"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="swelling">Bengkak / Hangat</span></div></label>
                             <input type="checkbox" class="symptom-checkbox" id="purulent" onchange="calculateRisk()">
                             <label class="symptom-label" for="purulent"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="purulent">Keluar Nanah</span></div></label>
                             <input type="checkbox" class="symptom-checkbox" id="tenderness" onchange="calculateRisk()">
-                            <label class="symptom-label" for="tenderness"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="tenderness">Nyeri bila Ditekan</span></div></label>
+                            <label class="symptom-label" for="tenderness"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="tenderness">Nyeri Tekan</span></div></label>
                             <input type="checkbox" class="symptom-checkbox" id="tunnelInfection" onchange="calculateRisk()">
-                            <label class="symptom-label" for="tunnelInfection"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="tunnelInfection">Infeksi Jalur Bawah Kulit</span></div></label>
+                            <label class="symptom-label" for="tunnelInfection"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="tunnelInfection">Infeksi Terowongan</span></div></label>
                         </div>
                         <h4 class="text-sm font-semibold mb-3 text-gray-600 uppercase tracking-wider" data-i18n="systemicInfection">Infeksi Sistemik</h4>
                         <div class="space-y-3">
                             <input type="checkbox" class="symptom-checkbox" id="fever" onchange="calculateRisk()">
                             <label class="symptom-label" for="fever"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="fever">Demam (>38 C)</span></div></label>
                             <input type="checkbox" class="symptom-checkbox" id="chills" onchange="calculateRisk()">
-                            <label class="symptom-label" for="chills"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="chills">Menggigil Hebat</span></div></label>
+                            <label class="symptom-label" for="chills"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="chills">Menggigil</span></div></label>
                             <input type="checkbox" class="symptom-checkbox" id="hypotension" onchange="calculateRisk()">
-                            <label class="symptom-label" for="hypotension"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="hypotension">Tekanan Darah Rendah</span></div></label>
+                            <label class="symptom-label" for="hypotension"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="hypotension">TD Rendah</span></div></label>
                             <input type="checkbox" class="symptom-checkbox" id="leukocytosis" onchange="calculateRisk()">
                             <label class="symptom-label" for="leukocytosis"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="leukocytosis">Leukosit Tinggi</span></div></label>
                             <input type="checkbox" class="symptom-checkbox" id="malaise" onchange="calculateRisk()">
-                            <label class="symptom-label" for="malaise"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="malaise">Lemas / Tidak Enak Badan</span></div></label>
+                            <label class="symptom-label" for="malaise"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="malaise">Lemas</span></div></label>
                         </div>
                     </div>
                 </div>
@@ -787,29 +822,29 @@
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                             </div>
                             <div>
-                                <h3 class="font-semibold text-gray-800" data-i18n="dysfunctionTitle">Gangguan Aliran Darah</h3>
+                                <h3 class="font-semibold text-gray-800" data-i18n="dysfunctionTitle">Gangguan Aliran</h3>
                             </div>
                         </div>
                         <span class="badge badge-low" id="dysfunctionBadge">Low</span>
                     </div>
-                    <div class="p-5">
+                    <div class="p-4 sm:p-5">
                         <h4 class="text-sm font-semibold mb-3 text-gray-600 uppercase tracking-wider" data-i18n="flowIssues">Masalah Aliran</h4>
                         <div class="space-y-3 mb-6">
                             <input type="checkbox" class="symptom-checkbox" id="lowFlow" onchange="calculateRisk()">
-                            <label class="symptom-label" for="lowFlow"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="lowFlow">Aliran Darah Lambat</span></div></label>
+                            <label class="symptom-label" for="lowFlow"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="lowFlow">Aliran Lambat</span></div></label>
                             <input type="checkbox" class="symptom-checkbox" id="arterialAlarm" onchange="calculateRisk()">
-                            <label class="symptom-label" for="arterialAlarm"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="arterialAlarm">Alarm Tarikan Darah</span></div></label>
+                            <label class="symptom-label" for="arterialAlarm"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="arterialAlarm">Alarm Tarikan</span></div></label>
                             <input type="checkbox" class="symptom-checkbox" id="venousAlarm" onchange="calculateRisk()">
-                            <label class="symptom-label" for="venousAlarm"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="venousAlarm">Alarm Kembalinya Darah</span></div></label>
+                            <label class="symptom-label" for="venousAlarm"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="venousAlarm">Alarm Kembalian</span></div></label>
                         </div>
                         <h4 class="text-sm font-semibold mb-3 text-gray-600 uppercase tracking-wider" data-i18n="obstruction">Tanda Sumbatan</h4>
                         <div class="space-y-3">
                             <input type="checkbox" class="symptom-checkbox" id="flushDifficulty" onchange="calculateRisk()">
-                            <label class="symptom-label" for="flushDifficulty"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="flushDifficulty">Susah Disuntik Cairan</span></div></label>
+                            <label class="symptom-label" for="flushDifficulty"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="flushDifficulty">Sulit Disuntik</span></div></label>
                             <input type="checkbox" class="symptom-checkbox" id="positionDependent" onchange="calculateRisk()">
-                            <label class="symptom-label" for="positionDependent"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="positionDependent">Aliran Berubah Saat Bergerak</span></div></label>
+                            <label class="symptom-label" for="positionDependent"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="positionDependent">Posisi Tergantung</span></div></label>
                             <input type="checkbox" class="symptom-checkbox" id="visibleClot" onchange="calculateRisk()">
-                            <label class="symptom-label" for="visibleClot"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="visibleClot">Ada Gumpalan Darah</span></div></label>
+                            <label class="symptom-label" for="visibleClot"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="visibleClot">Ada Gumpalan</span></div></label>
                             <input type="checkbox" class="symptom-checkbox" id="recirculation" onchange="calculateRisk()">
                             <label class="symptom-label" for="recirculation"><span class="checkbox-indicator"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><div><span class="font-medium text-gray-800" data-i18n="recirculation">Resirkulasi Tinggi</span></div></label>
                         </div>
@@ -817,10 +852,10 @@
                 </div>
             </div>
 
-            <div class="mt-6 flex flex-wrap gap-4 justify-center">
+            <div class="mt-6 flex flex-wrap gap-3 justify-center">
                 <button class="action-btn btn-primary" onclick="calculateRisk()">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
-                    <span data-i18n="calculateBtn">Hitung Skor Risiko</span>
+                    <span data-i18n="calculateBtn">Hitung Skor</span>
                 </button>
                 <button class="action-btn btn-secondary" onclick="resetForm()">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
@@ -836,12 +871,12 @@
                     <div class="card-header"><h3 class="font-semibold text-teal-700" data-i18n="totalRiskScore">Skor Risiko Total</h3></div>
                     <div class="p-6 text-center">
                         <div class="relative inline-block mb-4">
-                            <svg class="progress-ring" width="160" height="160">
-                                <circle cx="80" cy="80" r="70" fill="none" stroke="#f3f4f6" stroke-width="12"/>
-                                <circle id="progressCircle" class="progress-ring-circle" cx="80" cy="80" r="70" fill="none" stroke="#22c55e" stroke-width="12" stroke-linecap="round" stroke-dasharray="439.8" stroke-dashoffset="439.8"/>
+                            <svg class="progress-ring" width="140" height="140">
+                                <circle cx="70" cy="70" r="60" fill="none" stroke="#f3f4f6" stroke-width="12"/>
+                                <circle id="progressCircle" class="progress-ring-circle" cx="70" cy="70" r="60" fill="none" stroke="#22c55e" stroke-width="12" stroke-linecap="round" stroke-dasharray="377" stroke-dashoffset="377"/>
                             </svg>
                             <div class="absolute inset-0 flex flex-col items-center justify-center">
-                                <span class="text-5xl font-bold text-gray-800" id="totalScore">0</span>
+                                <span class="text-4xl font-bold text-gray-800" id="totalScore">0</span>
                                 <span class="text-sm text-gray-500" data-i18n="points">poin</span>
                             </div>
                         </div>
@@ -852,7 +887,7 @@
 
                 <div class="card lg:col-span-2">
                     <div class="card-header"><h3 class="font-semibold text-teal-700" data-i18n="riskBreakdown">Rincian Faktor Risiko</h3></div>
-                    <div class="p-5">
+                    <div class="p-4 sm:p-5">
                         <div class="space-y-4">
                             <div><div class="flex justify-between items-center mb-2"><span class="text-sm font-medium text-gray-700" data-i18n="infectionRisk">Risiko Infeksi</span><span class="text-sm font-semibold text-red-500" id="infectionScoreDisplay">0/15</span></div><div class="risk-meter"><div class="risk-fill bg-emerald-400" id="infectionBar" style="width: 0%;"></div></div></div>
                             <div><div class="flex justify-between items-center mb-2"><span class="text-sm font-medium text-gray-700" data-i18n="dysfunctionRisk">Risiko Gangguan Aliran</span><span class="text-sm font-semibold text-orange-500" id="dysfunctionScoreDisplay">0/14</span></div><div class="risk-meter"><div class="risk-fill bg-orange-400" id="dysfunctionBar" style="width: 0%;"></div></div></div>
@@ -877,29 +912,29 @@
                 <div class="card-header border-purple-100">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full flex items-center justify-center bg-purple-100">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center bg-purple-100 flex-shrink-0">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="#8b5cf6"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.94 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.52-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479c0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487 1.054.453 1.875.709 2.51.903.999.306 1.905.26 2.623.159.801-.112 2.468-1.009 2.817-1.984.349-.976.349-1.81.245-1.984-.074-.124-.272-.198-.57-.347z"/></svg>
                             </div>
                             <div>
                                 <h3 class="font-semibold text-purple-800" data-i18n="sendReportTitle">Kirim Laporan</h3>
-                                <p class="text-xs text-purple-600" data-i18n="sendReportDesc">Kirim hasil penilaian ke tim medis</p>
+                                <p class="text-xs text-purple-600 hidden sm:block" data-i18n="sendReportDesc">Kirim hasil penilaian ke tim medis</p>
                             </div>
                         </div>
                         <div class="status-connected">
                             <span class="status-dot"></span>
-                            <span data-i18n="connected">Database Terhubung</span>
+                            <span data-i18n="connected">Terhubung</span>
                         </div>
                     </div>
                 </div>
-                <div class="p-5">
+                <div class="p-4 sm:p-5">
                     <!-- Perawat Contacts -->
                     <h4 class="text-sm font-semibold text-gray-700 mb-3" data-i18n="nurses">Perawat</h4>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
                         <div class="contact-card">
                             <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold text-sm">R</div>
-                                <div>
-                                    <p class="font-semibold text-gray-800 text-sm">Riza</p>
+                                <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold text-sm flex-shrink-0">R</div>
+                                <div class="overflow-hidden">
+                                    <p class="font-semibold text-gray-800 text-sm truncate">Riza</p>
                                     <p class="text-xs text-gray-500">082227707573</p>
                                 </div>
                             </div>
@@ -907,9 +942,9 @@
                         </div>
                         <div class="contact-card">
                             <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">P</div>
-                                <div>
-                                    <p class="font-semibold text-gray-800 text-sm">Pembayun</p>
+                                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm flex-shrink-0">P</div>
+                                <div class="overflow-hidden">
+                                    <p class="font-semibold text-gray-800 text-sm truncate">Pembayun</p>
                                     <p class="text-xs text-gray-500">083831217784</p>
                                 </div>
                             </div>
@@ -917,9 +952,9 @@
                         </div>
                         <div class="contact-card">
                             <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-bold text-sm">H</div>
-                                <div>
-                                    <p class="font-semibold text-gray-800 text-sm">Hesty</p>
+                                <div class="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-bold text-sm flex-shrink-0">H</div>
+                                <div class="overflow-hidden">
+                                    <p class="font-semibold text-gray-800 text-sm truncate">Hesty</p>
                                     <p class="text-xs text-gray-500">082124700093</p>
                                 </div>
                             </div>
@@ -927,9 +962,9 @@
                         </div>
                         <div class="contact-card">
                             <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 font-bold text-sm">R</div>
-                                <div>
-                                    <p class="font-semibold text-gray-800 text-sm">Rinda</p>
+                                <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 font-bold text-sm flex-shrink-0">R</div>
+                                <div class="overflow-hidden">
+                                    <p class="font-semibold text-gray-800 text-sm truncate">Rinda</p>
                                     <p class="text-xs text-gray-500">085210622568</p>
                                 </div>
                             </div>
@@ -937,9 +972,9 @@
                         </div>
                         <div class="contact-card">
                             <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-sm">I</div>
-                                <div>
-                                    <p class="font-semibold text-gray-800 text-sm">Iman</p>
+                                <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-sm flex-shrink-0">I</div>
+                                <div class="overflow-hidden">
+                                    <p class="font-semibold text-gray-800 text-sm truncate">Iman</p>
                                     <p class="text-xs text-gray-500">087812203039</p>
                                 </div>
                             </div>
@@ -952,9 +987,9 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div class="contact-card border-red-200 bg-red-50/30">
                             <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold text-sm">dr</div>
-                                <div>
-                                    <p class="font-semibold text-gray-800 text-sm">dr. Achmad Rifai, Sp.PD-KGH</p>
+                                <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold text-sm flex-shrink-0">dr</div>
+                                <div class="overflow-hidden">
+                                    <p class="font-semibold text-gray-800 text-sm truncate">dr. Achmad Rifai</p>
                                     <p class="text-xs text-gray-500">081252651083</p>
                                 </div>
                             </div>
@@ -965,13 +1000,13 @@
                     <!-- Action Buttons -->
                     <div class="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <button onclick="sendToSpreadsheet()" class="action-btn btn-primary w-full justify-center text-sm">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                            <span data-i18n="saveToDb">Simpan ke Database</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                            <span data-i18n="saveToDb">Simpan ke DB</span>
                         </button>
                         
                         <button onclick="saveToHistory()" class="action-btn btn-secondary w-full justify-center text-sm">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                            <span data-i18n="saveToAccount">Simpan ke Akun Saya</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                            <span data-i18n="saveToAccount">Simpan Riwayat</span>
                         </button>
                     </div>
                 </div>
@@ -982,10 +1017,10 @@
         <div id="riwayat-section" class="section">
             <div class="card">
                 <div class="card-header flex justify-between items-center">
-                    <h3 class="font-semibold text-teal-700" data-i18n="myHistory">Riwayat Assesmen Saya</h3>
-                    <button onclick="clearHistory()" class="text-red-500 text-sm hover:underline" data-i18n="clearAll">Hapus Semua</button>
+                    <h3 class="font-semibold text-teal-700" data-i18n="myHistory">Riwayat Assesmen</h3>
+                    <button onclick="clearHistory()" class="text-red-500 text-xs sm:text-sm hover:underline" data-i18n="clearAll">Hapus Semua</button>
                 </div>
-                <div class="p-6" id="historyContainer">
+                <div class="p-4 sm:p-6" id="historyContainer">
                     <p class="text-gray-500 text-center" data-i18n="noHistory">Belum ada riwayat tersimpan.</p>
                 </div>
             </div>
@@ -995,13 +1030,13 @@
         <div id="panduan-section" class="section">
             <div class="card mb-6">
                 <div class="card-header flex justify-between items-center">
-                    <h3 class="font-semibold text-teal-700" data-i18n="guideTitle">Panduan Penggunaan Aplikasi</h3>
-                    <button onclick="readGuide()" class="action-btn btn-secondary text-sm py-2 px-4">
+                    <h3 class="font-semibold text-teal-700" data-i18n="guideTitle">Panduan Penggunaan</h3>
+                    <button onclick="readGuide()" class="action-btn btn-secondary text-xs sm:text-sm py-2 px-4">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-                        <span data-i18n="readAloud">Dibacakan</span>
+                        <span data-i18n="readAloud">Baca</span>
                     </button>
                 </div>
-                <div class="p-6 guide-text">
+                <div class="p-4 sm:p-6 guide-text">
                     <!-- Step 1 -->
                     <div class="guide-step">
                         <h4>1. Membuat Akun</h4>
@@ -1010,7 +1045,7 @@
 
                     <!-- Step 2 -->
                     <div class="guide-step">
-                        <h4>2. Proses Pengkajian (Assesmen)</h4>
+                        <h4>2. Proses Pengkajian</h4>
                         <p data-i18n="guideStep2">Pada tab "Penilaian", lengkapi data pasien seperti ID, Nama, Usia, Instalasi, dan Ruang. Centang kondisi komorbid jika ada. Kemudian, centang gejala infeksi lokal/sistemik dan gangguan aliran darah yang dialami pasien.</p>
                     </div>
 
@@ -1019,68 +1054,30 @@
                         <h4>3. Mengirim Hasil</h4>
                         <p data-i18n="guideStep3">Setelah mengisi form, klik "Hitung Skor Risiko". Hasil akan muncul di tab "Hasil". Pilih kontak Perawat atau Dokter yang dituju, lalu klik "Kirim" untuk mengirim laporan via WhatsApp.</p>
                     </div>
-
-                    <!-- Step 4 -->
-                    <div class="guide-step">
-                        <h4>4. Menyimpan Hasil</h4>
-                        <p data-i18n="guideStep4">Gunakan tombol "Simpan ke Database" untuk mencatat ke spreadsheet pusat, atau "Simpan ke Akun Saya" untuk menyimpan riwayat pribadi di perangkat Anda.</p>
-                    </div>
-
-                    <!-- Step 5 -->
-                    <div class="guide-step">
-                        <h4>5. Melihat Riwayat</h4>
-                        <p data-i18n="guideStep5">Klik profil Anda di pojok kanan atas, lalu pilih "Riwayat Saya" untuk melihat daftar assesmen yang telah Anda simpan di akun.</p>
-                    </div>
-
-                    <!-- Step 6 -->
-                    <div class="guide-step">
-                        <h4>6. Panduan Medis & Video</h4>
-                        <p data-i18n="guideStep6">Scroll ke bawah untuk membaca referensi medis resmi dan menonton video edukasi perawatan CVC.</p>
-                    </div>
                 </div>
             </div>
 
             <!-- Literature References Updated -->
             <div class="card mb-6">
-                <div class="card-header"><h3 class="font-semibold text-teal-700" data-i18n="referencesTitle">Literatur & Referensi Resmi</h3></div>
-                <div class="p-5">
+                <div class="card-header"><h3 class="font-semibold text-teal-700" data-i18n="referencesTitle">Literatur & Referensi</h3></div>
+                <div class="p-4 sm:p-5">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8640568/" target="_blank" class="literature-card">
-                            <div class="flex items-start gap-4">
-                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0"><span class="text-white font-bold text-lg">1</span></div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0"><span class="text-white font-bold">1</span></div>
                                 <div>
-                                    <h4 class="font-semibold text-gray-800 text-sm leading-tight">Central Venous Catheters for Hemodialysis—the Myth and the Evidence</h4>
+                                    <h4 class="font-semibold text-gray-800 text-sm leading-tight">Central Venous Catheters for Hemodialysis</h4>
                                     <p class="text-xs text-gray-500 mt-1">PMC / NIH</p>
                                 </div>
                             </div>
                         </a>
                         
                         <a href="https://www.bcrenal.ca/resource-gallery/Documents/CVC-Initiation_of_Dialysis.pdf" target="_blank" class="literature-card">
-                            <div class="flex items-start gap-4">
-                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center flex-shrink-0"><span class="text-white font-bold text-lg">2</span></div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center flex-shrink-0"><span class="text-white font-bold">2</span></div>
                                 <div>
-                                    <h4 class="font-semibold text-gray-800 text-sm leading-tight">Hemodialysis Central Venous CVC: Initiation of Dialysis</h4>
-                                    <p class="text-xs text-gray-500 mt-1">BC Renal Agency (PDF)</p>
-                                </div>
-                            </div>
-                        </a>
-                        
-                        <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8856770/" target="_blank" class="literature-card">
-                            <div class="flex items-start gap-4">
-                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center flex-shrink-0"><span class="text-white font-bold text-lg">3</span></div>
-                                <div>
-                                    <h4 class="font-semibold text-gray-800 text-sm leading-tight">KDOQI 2019 Vascular Access Guidelines: What Is New</h4>
-                                    <p class="text-xs text-gray-500 mt-1">PMC / NIH</p>
-                                </div>
-                            </div>
-                        </a>
-                        
-                        <a href="https://kemkes.go.id/app_asset/file_content_download/17012287246566b0b4923e55.23821494.pdf" target="_blank" class="literature-card">
-                            <div class="flex items-start gap-4">
-                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0"><span class="text-white font-bold text-lg">4</span></div>
-                                <div>
-                                    <h4 class="font-semibold text-gray-800 text-sm leading-tight">Keputusan Menteri Kesehatan (Hal 34)</h4>
-                                    <p class="text-xs text-gray-500 mt-1">Kemkes Go ID (PDF)</p>
+                                    <h4 class="font-semibold text-gray-800 text-sm leading-tight">Initiation of Dialysis</h4>
+                                    <p class="text-xs text-gray-500 mt-1">BC Renal Agency</p>
                                 </div>
                             </div>
                         </a>
@@ -1091,9 +1088,9 @@
             <!-- Video Section -->
             <div class="card">
                 <div class="card-header">
-                    <h3 class="font-semibold text-teal-700" data-i18n="videoTitle">Video Edukasi Perawatan CVC</h3>
+                    <h3 class="font-semibold text-teal-700" data-i18n="videoTitle">Video Edukasi</h3>
                 </div>
-                <div class="p-5">
+                <div class="p-4 sm:p-5">
                     <div class="aspect-video bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
                          <iframe src="https://drive.google.com/file/d/16_RQIDh7VcxzXJw_-dmkdnAANP0pZg8x/preview" width="100%" height="100%" allow="autoplay" class="rounded-xl"></iframe>
                     </div>
@@ -1119,25 +1116,15 @@
                             <h4 class="font-semibold text-gray-900 text-lg" data-i18n="privacyDataTitle">2. Penyimpanan Data</h4>
                             <p class="mt-2" data-i18n="privacyDataText">Data pasien disimpan secara lokal pada perangkat pengguna dan terintegrasi dengan Google Spreadsheet instansi kesehatan.</p>
                         </div>
-                        
-                        <div class="pt-4 border-t border-gray-200">
-                            <p class="text-sm text-gray-500" data-i18n="lastUpdate">Terakhir diperbarui: Januari 2026</p>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <footer class="relative z-10 mt-12 py-6 border-t border-gray-200 bg-white/50">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-3">
-                    <img src="https://raw.githubusercontent.com/bumimadinahdb26-cloud/cvcare/main/logo.png" alt="Logo" class="h-8 w-auto opacity-60" onerror="this.style.display='none'">
-                    <p class="text-sm text-gray-600 font-medium">CVC Early Warning System v2.2</p>
-                </div>
-                <div class="text-xs text-gray-400">2026 | Created by Iman Waluyo</div>
-            </div>
+    <footer class="relative z-10 mt-12 py-4 border-t border-gray-200 bg-white/50">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-xs text-gray-400">2026 | CVC EWS v2.2 | Created by Iman Waluyo</p>
         </div>
     </footer>
 
@@ -1164,13 +1151,13 @@
                 version: "Versi",
                 year: "Tahun",
                 purposeTitle: "Tujuan Aplikasi",
-                purposeText: "Aplikasi ini dirancang untuk membantu tenaga medis dalam melakukan deteksi dini terhadap komplikasi pada pasien dengan Central Venous Catheter (CVC). Sistem ini memberikan penilaian risiko berdasarkan tanda-tanda infeksi dan gangguan aliran darah, sehingga penanganan dapat dilakukan secara cepat dan tepat.",
+                purposeText: "Aplikasi ini dirancang untuk membantu tenaga medis dalam melakukan deteksi dini terhadap komplikasi pada pasien dengan Central Venous Catheter (CVC).",
                 info: "Info Aplikasi",
                 history: "Riwayat Saya",
                 logout: "Keluar",
                 navAssessment: "Penilaian",
                 navResults: "Hasil",
-                navGuide: "Panduan & Referensi",
+                navGuide: "Panduan",
                 navPrivacy: "Privasi",
                 patientData: "Data Pasien",
                 patientId: "ID Pasien",
@@ -1187,31 +1174,30 @@
                 diabetes: "Diabetes",
                 lowAlbumin: "Albumin Rendah",
                 immuno: "Imun Lemah",
-                infectionTitle: "Tanda-Tanda Infeksi",
+                infectionTitle: "Tanda Infeksi",
                 localInfection: "Infeksi Lokal",
-                erythema: "Kemerahan di Kulit",
-                erythemaDesc: "Ada bercak merah di sekitar kateter",
-                swelling: "Bengkak / Terasa Hangat",
+                erythema: "Kemerahan",
+                swelling: "Bengkak / Hangat",
                 purulent: "Keluar Nanah",
-                tenderness: "Nyeri bila Ditekan",
-                tunnelInfection: "Infeksi Jalur Bawah Kulit",
+                tenderness: "Nyeri Tekan",
+                tunnelInfection: "Infeksi Terowongan",
                 systemicInfection: "Infeksi Sistemik",
                 fever: "Demam (>38 C)",
-                chills: "Menggigil Hebat",
-                hypotension: "Tekanan Darah Rendah",
+                chills: "Menggigil",
+                hypotension: "TD Rendah",
                 leukocytosis: "Leukosit Tinggi",
-                malaise: "Lemas / Tidak Enak Badan",
-                dysfunctionTitle: "Gangguan Aliran Darah",
+                malaise: "Lemas",
+                dysfunctionTitle: "Gangguan Aliran",
                 flowIssues: "Masalah Aliran",
-                lowFlow: "Aliran Darah Lambat",
-                arterialAlarm: "Alarm Tarikan Darah",
-                venousAlarm: "Alarm Kembalinya Darah",
+                lowFlow: "Aliran Lambat",
+                arterialAlarm: "Alarm Tarikan",
+                venousAlarm: "Alarm Kembalian",
                 obstruction: "Tanda Sumbatan",
-                flushDifficulty: "Susah Disuntik Cairan",
-                positionDependent: "Aliran Berubah Saat Bergerak",
-                visibleClot: "Ada Gumpalan Darah",
+                flushDifficulty: "Sulit Disuntik",
+                positionDependent: "Posisi Tergantung",
+                visibleClot: "Ada Gumpalan",
                 recirculation: "Resirkulasi Tinggi",
-                calculateBtn: "Hitung Skor Risiko",
+                calculateBtn: "Hitung Skor",
                 resetBtn: "Reset",
                 totalRiskScore: "Skor Risiko Total",
                 points: "poin",
@@ -1225,32 +1211,28 @@
                 recommendations: "Saran Tindakan",
                 sendReportTitle: "Kirim Laporan",
                 sendReportDesc: "Kirim hasil penilaian ke tim medis",
-                connected: "Database Terhubung",
+                connected: "Terhubung",
                 nurses: "Perawat",
                 sendBtn: "Kirim",
                 doctors: "Dokter",
-                saveToDb: "Simpan ke Database",
-                saveToAccount: "Simpan ke Akun Saya",
-                myHistory: "Riwayat Assesmen Saya",
+                saveToDb: "Simpan ke DB",
+                saveToAccount: "Simpan Riwayat",
+                myHistory: "Riwayat Assesmen",
                 clearAll: "Hapus Semua",
                 noHistory: "Belum ada riwayat tersimpan.",
-                guideTitle: "Panduan Penggunaan Aplikasi",
-                readAloud: "Dibacakan",
-                guideStep1: "Klik tombol 'Daftar' di pojok kanan atas. Isi nama lengkap, buat username dan password, lalu masukkan nomor HP. Klik 'Daftar' untuk menyimpan akun Anda. Akun digunakan untuk menyimpan riwayat asesmen pribadi.",
-                guideStep2: "Pada tab 'Penilaian', lengkapi data pasien seperti ID, Nama, Usia, Instalasi, dan Ruang. Centang kondisi komorbid jika ada. Kemudian, centang gejala infeksi lokal/sistemik dan gangguan aliran darah yang dialami pasien.",
-                guideStep3: "Setelah mengisi form, klik 'Hitung Skor Risiko'. Hasil akan muncul di tab 'Hasil'. Pilih kontak Perawat atau Dokter yang dituju, lalu klik 'Kirim' untuk mengirim laporan via WhatsApp.",
-                guideStep4: "Gunakan tombol 'Simpan ke Database' untuk mencatat ke spreadsheet pusat, atau 'Simpan ke Akun Saya' untuk menyimpan riwayat pribadi di perangkat Anda.",
-                guideStep5: "Klik profil Anda di pojok kanan atas, lalu pilih 'Riwayat Saya' untuk melihat daftar assesmen yang telah Anda simpan di akun.",
-                guideStep6: "Scroll ke bawah untuk membaca referensi medis resmi dan menonton video edukasi perawatan CVC.",
-                referencesTitle: "Literatur & Referensi Resmi",
-                videoTitle: "Video Edukasi Perawatan CVC",
+                guideTitle: "Panduan Penggunaan",
+                readAloud: "Baca",
+                guideStep1: "Klik tombol 'Daftar' di pojok kanan atas. Isi data diri Anda.",
+                guideStep2: "Lengkapi data pasien dan centang gejala yang ada.",
+                guideStep3: "Klik 'Hitung Skor', lalu pilih kontak untuk mengirim laporan via WhatsApp.",
+                referencesTitle: "Literatur & Referensi",
+                videoTitle: "Video Edukasi",
                 videoDesc: "Video Panduan Perawatan CVC",
                 privacyTitle: "Kebijakan Privasi",
                 privacyIntroTitle: "1. Pendahuluan",
-                privacyIntroText: "CVC Early Warning System ('Aplikasi') berkomitmen untuk melindungi privasi pengguna.",
+                privacyIntroText: "CVC Early Warning System berkomitmen melindungi privasi pengguna.",
                 privacyDataTitle: "2. Penyimpanan Data",
-                privacyDataText: "Data pasien disimpan secara lokal pada perangkat pengguna dan terintegrasi dengan Google Spreadsheet instansi kesehatan.",
-                lastUpdate: "Terakhir diperbarui: Januari 2026"
+                privacyDataText: "Data pasien disimpan lokal dan terintegrasi dengan spreadsheet instansi."
             },
             en: {
                 login: "Login",
@@ -1272,13 +1254,13 @@
                 version: "Version",
                 year: "Year",
                 purposeTitle: "Application Purpose",
-                purposeText: "This application is designed to assist medical personnel in early detection of complications in patients with Central Venous Catheters (CVC).",
+                purposeText: "Designed to assist medical personnel in early detection of complications in patients with Central Venous Catheters (CVC).",
                 info: "App Info",
                 history: "My History",
                 logout: "Logout",
                 navAssessment: "Assessment",
                 navResults: "Results",
-                navGuide: "Guide & References",
+                navGuide: "Guide",
                 navPrivacy: "Privacy",
                 patientData: "Patient Data",
                 patientId: "Patient ID",
@@ -1297,29 +1279,28 @@
                 immuno: "Immunocompromised",
                 infectionTitle: "Signs of Infection",
                 localInfection: "Local Infection",
-                erythema: "Skin Redness",
-                erythemaDesc: "Red patches around catheter",
+                erythema: "Redness",
                 swelling: "Swelling / Warmth",
                 purulent: "Purulent Discharge",
-                tenderness: "Tenderness on Pressure",
-                tunnelInfection: "Tunnel Tract Infection",
+                tenderness: "Tenderness",
+                tunnelInfection: "Tunnel Infection",
                 systemicInfection: "Systemic Infection",
                 fever: "Fever (>38 C)",
-                chills: "Severe Chills",
-                hypotension: "Low Blood Pressure",
-                leukocytosis: "High Leukocytes",
-                malaise: "Weakness / Malaise",
-                dysfunctionTitle: "Blood Flow Issues",
+                chills: "Chills",
+                hypotension: "Hypotension",
+                leukocytosis: "Leukocytosis",
+                malaise: "Malaise",
+                dysfunctionTitle: "Flow Issues",
                 flowIssues: "Flow Issues",
-                lowFlow: "Slow Blood Flow",
+                lowFlow: "Low Flow",
                 arterialAlarm: "Arterial Alarm",
                 venousAlarm: "Venous Alarm",
                 obstruction: "Obstruction Signs",
-                flushDifficulty: "Difficulty Flushing",
-                positionDependent: "Position-Dependent Flow",
-                visibleClot: "Visible Blood Clot",
-                recirculation: "High Recirculation",
-                calculateBtn: "Calculate Risk Score",
+                flushDifficulty: "Flush Difficulty",
+                positionDependent: "Position Dependent",
+                visibleClot: "Visible Clot",
+                recirculation: "Recirculation",
+                calculateBtn: "Calculate",
                 resetBtn: "Reset",
                 totalRiskScore: "Total Risk Score",
                 points: "points",
@@ -1333,32 +1314,28 @@
                 recommendations: "Recommendations",
                 sendReportTitle: "Send Report",
                 sendReportDesc: "Send assessment results to medical team",
-                connected: "Database Connected",
+                connected: "Connected",
                 nurses: "Nurses",
                 sendBtn: "Send",
                 doctors: "Doctors",
-                saveToDb: "Save to Database",
-                saveToAccount: "Save to My Account",
-                myHistory: "My Assessment History",
+                saveToDb: "Save to DB",
+                saveToAccount: "Save History",
+                myHistory: "My History",
                 clearAll: "Clear All",
                 noHistory: "No history saved yet.",
-                guideTitle: "Application User Guide",
-                readAloud: "Read Aloud",
-                guideStep1: "Click 'Register' button at the top right. Fill in your full name, create username and password, enter phone number. Click 'Register' to save your account.",
-                guideStep2: "In the 'Assessment' tab, complete patient data: ID, Name, Age, Installation, and Room. Check comorbid conditions if any. Then check local/systemic infection symptoms and blood flow issues.",
-                guideStep3: "After filling the form, click 'Calculate Risk Score'. Results appear in 'Results' tab. Select Nurse or Doctor contact, click 'Send' to send report via WhatsApp.",
-                guideStep4: "Use 'Save to Database' to record to central spreadsheet, or 'Save to My Account' for personal history on your device.",
-                guideStep5: "Click your profile at top right, select 'My History' to view your saved assessments.",
-                guideStep6: "Scroll down to read official medical references and watch CVC care educational video.",
-                referencesTitle: "Official Literature & References",
-                videoTitle: "CVC Care Educational Video",
+                guideTitle: "User Guide",
+                readAloud: "Read",
+                guideStep1: "Click 'Register' at the top right. Fill in your details.",
+                guideStep2: "Complete patient data and check existing symptoms.",
+                guideStep3: "Click 'Calculate Score', then select a contact to send the report via WhatsApp.",
+                referencesTitle: "References",
+                videoTitle: "Educational Video",
                 videoDesc: "CVC Care Guide Video",
                 privacyTitle: "Privacy Policy",
                 privacyIntroTitle: "1. Introduction",
-                privacyIntroText: "CVC Early Warning System ('Application') is committed to protecting user privacy.",
+                privacyIntroText: "CVC Early Warning System is committed to protecting user privacy.",
                 privacyDataTitle: "2. Data Storage",
-                privacyDataText: "Patient data is stored locally on the user's device and integrated with the healthcare institution's Google Spreadsheet.",
-                lastUpdate: "Last updated: January 2026"
+                privacyDataText: "Patient data is stored locally and integrated with the institution's spreadsheet."
             }
         };
 
@@ -1410,7 +1387,6 @@
             
             // Update placeholders
             document.querySelectorAll('[placeholder]').forEach(el => {
-                // Manual mapping for placeholders if needed
                 const key = el.getAttribute('id'); 
                 if (key === 'loginUsername') el.placeholder = lang === 'id' ? 'Masukkan username' : 'Enter username';
                 if (key === 'loginPassword') el.placeholder = lang === 'id' ? 'Masukkan password' : 'Enter password';
@@ -1432,13 +1408,10 @@
             const steps = [
                 translations[currentLang].guideStep1,
                 translations[currentLang].guideStep2,
-                translations[currentLang].guideStep3,
-                translations[currentLang].guideStep4,
-                translations[currentLang].guideStep5,
-                translations[currentLang].guideStep6
+                translations[currentLang].guideStep3
             ];
             
-            const fullText = steps.join('. '); // Join steps with period
+            const fullText = steps.join('. ');
             
             const utterance = new SpeechSynthesisUtterance(fullText);
             utterance.lang = currentLang === 'id' ? 'id-ID' : 'en-US';
@@ -1493,7 +1466,7 @@
                 btn.classList.remove('btn-primary');
                 btn.classList.add('bg-green-500', 'text-white');
                 setTimeout(() => {
-                    btn.innerHTML = currentLang === 'id' ? 'Simpan ke Database' : 'Save to Database';
+                    btn.innerHTML = currentLang === 'id' ? 'Simpan ke DB' : 'Save to DB';
                     btn.classList.add('btn-primary');
                     btn.classList.remove('bg-green-500', 'text-white');
                     btn.disabled = false;
@@ -1583,6 +1556,7 @@
             document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
             document.getElementById(tabName + '-section').classList.add('active');
             document.getElementById('userDropdown').classList.remove('active');
+            window.scrollTo(0,0); // Scroll to top on tab change
         }
 
         function openModal(id) { document.getElementById(id).classList.add('active'); }
@@ -1690,7 +1664,7 @@
         function updateDisplay(total) {
             document.getElementById('totalScore').textContent = total;
             const circle = document.getElementById('progressCircle');
-            circle.style.strokeDashoffset = 439.8 * (1 - Math.min(total / 42, 1));
+            circle.style.strokeDashoffset = 377 * (1 - Math.min(total / 42, 1));
             circle.style.stroke = total >= 20 ? '#ef4444' : total >= 12 ? '#f97316' : total >= 5 ? '#fbbf24' : '#22c55e';
 
             const risk = getRiskLevel(total);
